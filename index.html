@@ -3,468 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mario Adventure - 25 Levels</title>
+    <title>Super Adventure World</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        body { 
+            background: linear-gradient(135deg, #1e3c72, #2a5298); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            padding: 10px;
+            transition: background 0.5s;
         }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            user-select: none;
-        }
-
-        #gameContainer {
+        body.dark-mode { background: #111; }
+        #game-container { 
+            border: 4px solid #fff; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            max-width: 100%;
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
+        }
+        .ui-bar { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            font-size: 20px; 
+            font-weight: bold;
+            text-shadow: 2px 2px #000;
+            z-index: 100;
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+        .screen {
+            position: absolute;
+            width: 800px;
+            height: 600px;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-
-        canvas {
-            border: 3px solid #333;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 100%;
-            max-height: 100%;
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-
-        #pauseMenu, #gameOverMenu, #settingsMenu, #characterSelect, #quizModal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.95);
-            padding: 30px;
-            border-radius: 20px;
-            border: 3px solid #ffd700;
-            text-align: center;
-            display: none;
-            z-index: 2000;
-            max-width: 90%;
-            max-height: 90%;
-            overflow-y: auto;
-        }
-
-        .menu-btn {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border: none;
             color: white;
-            padding: 15px 30px;
-            margin: 10px;
-            border-radius: 25px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-
-        .menu-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-        }
-
-        #levelGrid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .level-btn {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
+            z-index: 500;
             padding: 20px;
-            border-radius: 15px;
-            font-size: 16px;
-            font-weight: bold;
+            text-align: center;
+        }
+        .screen h1 { font-size: 48px; margin-bottom: 20px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00;}
+        .screen h2 { font-size: 24px; margin: 15px 0; }
+        button {
+            padding: 12px 25px;
+            margin: 8px;
+            font-size: 18px;
             cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            min-width: 200px;
+            transition: 0.2s;
         }
-
-        .level-btn.locked::before {
-            content: "🔒";
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 24px;
+        button:hover { background: #45a049; transform: scale(1.05); }
+        button:disabled {
+            background: #555 !important;
+            color: #999 !important;
+            cursor: not-allowed;
+            transform: none;
+            border: 2px solid #333;
         }
-
-        .level-btn.completed {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .level-btn.completed::after {
-            content: "⭐";
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 20px;
-        }
-
-        .star {
-            color: #ffd700;
-            font-size: 24px;
-            margin: 0 5px;
-        }
-
         input, select {
             padding: 10px;
+            font-size: 18px;
             margin: 10px;
+            width: 250px;
+            text-align: center;
+            border-radius: 8px;
+            border: 2px solid #ccc;
+        }
+        .grid-char {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
             border-radius: 10px;
-            border: 2px solid #4ecdc4;
-            font-size: 16px;
+            width: 90%;
         }
-
-        #mobileControls {
+        .char-btn {
+            width: 80px;
+            height: 80px;
+            font-size: 10px;
+            padding: 5px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            border: 3px solid #fff;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .char-btn .char-icon { font-size: 30px; margin-bottom: 3px; }
+        .char-btn.selected {
+            border-color: #ffdd00;
+            box-shadow: 0 0 15px #ffdd00;
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+        }
+        .quiz-option {
+            display: block;
+            width: 80%;
+            margin: 10px auto;
+            background: #2c3e50;
+        }
+        .quiz-option:hover { background: #34495e; }
+        .lobby-bg {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            gap: 20px;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
-
-        .control-btn {
+        .lock-icon {
+            font-size: 24px;
+            color: #aaa;
+        }
+        /* STYLE BINTANG */
+        .stars {
+            font-size: 40px;
+            margin: 15px 0;
+        }
+        .star {
+            color: #555;
+            transition: all 0.3s;
+        }
+        .star.gold {
+            color: #ffdd00;
+            text-shadow: 0 0 10px #ffdd00;
+        }
+        .level-stars {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        /* MOBILE CONTROLS */
+        .mobile-controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 200;
+        }
+        .ctrl-btn {
             width: 60px;
             height: 60px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
+            font-size: 30px;
             background: rgba(255,255,255,0.2);
+            border: 2px solid white;
             color: white;
-            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            min-width: unset;
         }
-
-        @media (max-width: 768px) {
-            #mobileControls {
-                display: flex;
-            }
+        @media (max-width: 800px) {
+            .mobile-controls { display: flex; }
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        
-        <div id="ui">
-            <div>Nyawa: <span id="lives">3</span> | Level: <span id="currentLevel">1</span> | 
-                <span id="stars">⭐⭐⭐</span> | 
-                <span id="playerName">Player</span></div>
-        </div>
 
-        <!-- Pause Menu -->
-        <div id="pauseMenu">
-            <h2>⏸️ PAUSED</h2>
-            <button class="menu-btn" onclick="resumeGame()">Resume</button>
-            <button class="menu-btn" onclick="restartLevel()">Restart</button>
-            <button class="menu-btn" onclick="showSettings()">Settings</button>
-            <button class="menu-btn" onclick="showLobby()">Quit to Lobby</button>
-        </div>
-
-        <!-- Game Over Menu -->
-        <div id="gameOverMenu">
-            <h2>💀 GAME OVER</h2>
-            <p id="finalScore"></p>
-            <button class="menu-btn" onclick="restartLevel()">Restart Level</button>
-            <button class="menu-btn" onclick="showLobby()">Back to Lobby</button>
-        </div>
-
-        <!-- Settings Menu -->
-        <div id="settingsMenu">
-            <h2>⚙️ SETTINGS</h2>
-            <div>
-                <label>Nama Player: </label>
-                <input type="text" id="playerNameInput" placeholder="Masukkan nama">
-                <button class="menu-btn" onclick="savePlayerName()">Simpan</button>
-            </div>
-            <div>
-                <label>Bahasa: </label>
-                <select id="languageSelect">
-                    <option value="id">Bahasa Indonesia</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
-            <div>
-                <label>Volume: </label>
-                <input type="range" id="volumeSlider" min="0" max="100" value="50">
-            </div>
-            <div>
-                <label>Theme: </label>
-                <select id="themeSelect">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                </select>
-            </div>
-            <button class="menu-btn" onclick="backToGame()">Back</button>
-        </div>
-
-        <!-- Character Select -->
-        <div id="characterSelect">
-            <h2>👤 PILIH KARAKTER (90 Total)</h2>
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-height: 400px; overflow-y: auto;">
-                <!-- Characters akan digenerate via JS -->
-            </div>
-            <button class="menu-btn" onclick="backToLobby()">Back to Lobby</button>
-        </div>
-
-        <!-- Lobby -->
-        <div id="lobbyScreen" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;">
-            <h1 style="font-size: 48px; margin-bottom: 20px; text-shadow: 3px 3px 6px rgba(0,0,0,0.8);">🌟 MARIO ADVENTURE 🌟</h1>
-            <div style="margin-bottom: 30px;">
-                <span class="star" id="totalStars">⭐⭐⭐</span>
-                <span style="font-size: 24px; margin-left: 20px;">Level Terbuka: <span id="unlockedLevels">1</span>/25</span>
-            </div>
-            <div id="levelGrid"></div>
-            <div style="margin-top: 30px;">
-                <button class="menu-btn" onclick="showCharacterSelect()" style="font-size: 20px; padding: 20px 40px;">Pilih Karakter</button>
-                <button class="menu-btn" onclick="showSettings()" style="font-size: 20px; padding: 20px 40px;">Settings</button>
-            </div>
-        </div>
-
-        <!-- Quiz Modal -->
-        <div id="quizModal">
-            <h2 id="quizTitle">Quiz Pintu Level</h2>
-            <div id="quizContent" style="margin: 20px 0; font-size: 18px;"></div>
-            <div id="quizOptions"></div>
-            <button class="menu-btn" onclick="submitQuiz()" style="margin-top: 20px;">Submit Jawaban</button>
-            <button class="menu-btn" onclick="skipQuiz()" style="background: #ff4444;">Skip (1 Nyawa)</button>
-        </div>
-
-        <!-- Mobile Controls -->
-        <div id="mobileControls">
-            <button class="control-btn" onclick="moveLeft()">←</button>
-            <button class="control-btn" onclick="jump()">↑</button>
-            <button class="control-btn" onclick="moveRight()">→</button>
-        </div>
+<div id="game-container">
+    <!-- UI HUD -->
+    <div id="hud" class="ui-bar" style="display:none;">
+        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Player</span> | ⚔️ <span id="skill">Skill</span>
     </div>
 
-    <script>
-        // Game State
-        let gameState = {
-            currentLevel: 1,
-            lives: 3,
-            stars: 3,
-            totalStars: 0,
-            unlockedLevels: 1,
-            playerName: "Player",
-            language: "id",
-            volume: 50,
-            theme: "dark",
-            selectedCharacter: 0,
-            isPaused: false,
-            gameRunning: false,
-            levelProgress: {},
-            achievements: [],
-            leaderboard: []
-        };
+    <!-- MOBILE CONTROLS -->
+    <div class="mobile-controls">
+        <div>
+            <button class="ctrl-btn" id="btnLeft">◀️</button>
+            <button class="ctrl-btn" id="btnRight">▶️</button>
+        </div>
+        <div>
+            <button class="ctrl-btn" id="btnJump">⬆️</button>
+            <button class="ctrl-btn" id="btnSkill">⚔️</button>
+        </div>
+    </div>
+</div>
 
-        // Game objects
-        let canvas, ctx, player, keys = {}, platforms = [], enemies = [], powerups = [], particles = [];
-        let camera = { x: 0, y: 0 };
-        let gameTimer = 0;
-        let boss = null;
-        let door = null;
-        let currentQuiz = null;
+<!-- LOADING SCREEN -->
+<div id="loadingScreen" class="screen" style="display:flex;">
+    <h1>🎮 SUPER ADVENTURE WORLD</h1>
+    <div style="font-size:20px; margin:20px;">Loading Assets...</div>
+    <div style="width:300px; height:20px; background:#333; border-radius:10px; overflow:hidden;">
+        <div id="loadBar" style="width:100%; height:100%; background:lime;"></div>
+    </div>
+</div>
 
-        // Characters (90 characters dengan skill unik)
-        const characters = [
-            { name: "Mario", emoji: "👨‍🎤", skill: "Double Jump", color: "#ff0000" },
-            { name: "Luigi", emoji: "👨‍🎨", skill: "High Jump", color: "#00ff00" },
-            { name: "Peach", emoji: "👸", skill: "Float", color: "#ffb6c1" },
-            { name: "Toad", emoji: "🍄", skill: "Speed Boost", color: "#ff69b4" },
-            { name: "Yoshi", emoji: "🦖", skill: "Egg Throw", color: "#00ff88" },
-            // ... (akan digenerate 90 karakter)
-        ];
+<!-- LOBBY SCREEN -->
+<div id="lobbyScreen" class="screen">
+    <div class="lobby-bg" id="lobbyBg" style="background: linear-gradient(135deg, #1a2980, #26d0ce);"></div>
+    <h1>🏰 MENU UTAMA</h1>
+    <button onclick="openLevelSelect()">🎮 PLAY GAME</button>
+    <button onclick="openCharacterSelect()">👥 CHARACTERS (90)</button>
+    <button onclick="openLeaderboard()">🏆 LEADERBOARD</button>
+    <button onclick="openAchievements()">🎖️ ACHIEVEMENTS</button>
+    <button onclick="openSettings()">⚙️ SETTINGS</button>
+    <button onclick="exitGame()">🚪 EXIT</button>
+</div>
 
-        // Quiz questions
-        const quizBank = {
-            negara: [
-                { q: "Ibukota Indonesia?", a: ["Jakarta", "Bandung", "Surabaya", "Medan"], correct: 0 },
-                { q: "Negara terbesar di dunia?", a: ["Rusia", "Kanada", "China", "USA"], correct: 0 }
-            ],
-            kota: [
-                { q: "Kota terbesar di Jawa Timur?", a: ["Surabaya", "Malang", "Jember", "Batu"], correct: 0 },
-                { q: "Ibukota Jawa Barat?", a: ["Bandung", "Bogor", "Bekasi", "Depok"], correct: 0 }
-            ],
-            kimia: [
-                { q: "Simbol air?", a: ["H2O", "CO2", "NaCl", "O2"], correct: 0 }
-            ],
-            // ... lebih banyak quiz
-        };
+<!-- LEVEL SELECT -->
+<div id="levelScreen" class="screen">
+    <h2>🗺️ PILIH LEVEL</h2>
+    <p style="color: #aaa; margin-bottom: 15px;">Selesaikan level untuk membuka yang baru!</p>
+    <div id="levelContainer" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; max-width:600px;">
+        <!-- Level buttons generated by JS -->
+    </div>
+    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
+</div>
 
-        // Initialize game
-        function init() {
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            
-            // Responsive canvas
-            function resizeCanvas() {
-                const size = Math.min(window.innerWidth * 0.95, window.innerHeight * 0.95);
-                canvas.width = size;
-                canvas.height = size * 0.75;
-            }
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+<!-- CHARACTER SELECT -->
+<div id="charScreen" class="screen">
+    <h2>👥 PILIH KARAKTER</h2>
+    <p style="color: #aaa; margin-bottom: 10px;">Pilih karakter dan gunakan skill uniknya!</p>
+    <div class="grid-char" id="charList">
+        <!-- Generated by JS -->
+    </div>
+    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
+</div>
 
-            loadGameData();
-            showLobby();
-            
-            // Event listeners
-            document.addEventListener('keydown', (e) => {
-                keys[e.code] = true;
-                if (e.code === 'Escape') togglePause();
-            });
-            document.addEventListener('keyup', (e) => keys[e.code] = false);
+<!-- SETTINGS SCREEN -->
+<div id="settingsScreen" class="screen">
+    <h2>⚙️ PENGATURAN</h2>
+    
+    <div>
+        <label>Nama Player:</label><br>
+        <input type="text" id="setName" placeholder="Masukkan Nama">
+    </div>
 
-            gameLoop();
-        }
+    <div>
+        <label>Volume Musik:</label><br>
+        <input type="range" id="setVolume" min="0" max="100" value="50">
+    </div>
 
-        // Show Loading Screen
-        function showLoadingScreen() {
-            ctx.fillStyle = 'rgba(0,0,0,0.9)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = '#ffd700';
-            ctx.font = 'bold 48px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Loading...', canvas.width/2, canvas.height/2);
-            
-            ctx.font = '24px Arial';
-            ctx.fillText('Membuat 25 level epic...', canvas.width/2, canvas.height/2 + 60);
-            
-            // Loading animation
-            ctx.save();
-            ctx.translate(canvas.width/2, canvas.height/2 + 120);
-            ctx.rotate(gameTimer * 0.1);
-            ctx.fillText('⏳', 0, 0);
-            ctx.restore();
-        }
+    <div>
+        <label>Bahasa:</label><br>
+        <select id="setLang">
+            <option value="id">🇮🇩 Indonesia</option>
+            <option value="en">🇺🇸 English</option>
+        </select>
+    </div>
 
-        // Lobby Screen
-        function showLobby() {
-            document.getElementById('lobbyScreen').style.display = 'flex';
-            document.getElementById('gameCanvas').style.display = 'none';
-            generateLevelGrid();
-        }
+    <div>
+        <label>Tampilan:</label><br>
+        <select id="setTheme">
+            <option value="light">☀️ Light Mode</option>
+            <option value="dark">🌙 Dark Mode</option>
+        </select>
+    </div>
 
-        function generateLevelGrid() {
-            const grid = document.getElementById('levelGrid');
-            grid.innerHTML = '';
-            
-            for (let i = 1; i <= 25; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'level-btn';
-                btn.innerHTML = `Level ${i}`;
-                
-                if (i > gameState.unlockedLevels) {
-                    btn.classList.add('locked');
-                    btn.disabled = true;
-                } else if (gameState.levelProgress[`level${i}`]) {
-                    btn.classList.add('completed');
-                }
-                
-                btn.onclick = () => startLevel(i);
-                grid.appendChild(btn);
-            }
-        }
+    <div>
+        <label>Background Lobby:</label><br>
+        <select id="setBg">
+            <option value="blue">🔵 Blue</option>
+            <option value="dark">⚫ Dark</option>
+            <option value="sunset">🌅 Sunset</option>
+            <option value="green">🟢 Green</option>
+            <option value="space">🌌 Space</option>
+        </select>
+    </div>
 
-        // Start Level
-        function startLevel(level) {
-            gameState.currentLevel = level;
-            gameState.lives = 3;
-            gameState.stars = 3;
-            document.getElementById('lobbyScreen').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block';
-            
-            initLevel(level);
-            gameState.gameRunning = true;
-            gameState.isPaused = false;
-        }
-
-        function initLevel(level) {
-            platforms = [];
-            enemies = [];
-            powerups = [];
-            particles = [];
-            
-            // Generate level berdasarkan tema
-            const themes = ['lava', 'es', 'duri', 'langit', 'magma', 'gunung', 'goa'];
-            const theme = themes[(level - 1) % themes.length];
-            
-            // Platform generation
-            for (let i = 0; i < 20; i++) {
-                platforms.push({
-                    x: i * 100 + Math.random() * 50,
-                    y: canvas.height - 100 - Math.random() * 200,
-                    width: 80 + Math.random() * 60,
-                    height: 20,
-                    color: getThemeColor(theme),
-                    type: Math.random() > 0.7 ? 'question' : 'normal'
-                });
-            }
-            
-            // Ground
-            platforms.unshift({
-                x: 0, y: canvas.height - 50, width: 5000, height: 50,
-                color: getThemeColor(theme), type: 'ground'
-            });
-            
-            // Enemies
-            for (let i = 0; i < 8; i++) {
-                enemies.push({
-                    x: 200 + i * 300 + Math.random() * 200,
-                    y: canvas.height - 150,
-                    width: 30, height: 30,
-                    vx: (Math.random() - 0.5) * 2,
-                    color: '#ff4444',
-                    type: ['goomba', 'koopa', 'spiky'][Math.floor(Math.random() * 3)]
-                });
-            }
-            
-            // Boss near door
-            boss = {
-                x: 4500, y: canvas.height - 150, width: 60, height: 60,
-                vx: -1, color: '#ff0000', health: 3, type: 'boss'
-            };
-            
-            // Door
-            door = { x: 4800, y: canvas.height - 200, width: 50, height: 100, open: false };
-            
-            // Player
-            player = {
-                x: 100, y: 100, width: 40, height: 50,
-                vx: 0, vy: 0, onGround: false, color: characters[gameState.selectedCharacter].color,
-                emoji: characters[gameState.selectedCharacter].emoji,
-                powerup: null,
-                invincible: 0
-            };
-            
-            camera = { x: 0, y: 0 };
-        }
-
-        function getThemeColor(theme) {
-            const colors = {
-                lava: '#ff4500', es: '#00bfff', duri: '#8b4513',
-                langit: '#87ceeb', magma: '#ff1493', gunung: '#696969',
+    <button onclick="saveSettings()">💾 SIMPAN</button>
+    <button onclick="showScreen('l
