@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gujitingun Bross Quiz</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <title>Super Adventure World</title>
+    
+    <!-- CDN PHASER YANG LEBIH STABIL -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
         body { 
@@ -240,6 +243,8 @@
 </div>
 
 <script>
+    console.log("📝 Script dimulai...");
+
     // === GAME DATA ===
     let GAME = {
         name: "Hero",
@@ -258,6 +263,7 @@
             {name:"Budi",score:9500}, {name:"Ani",score:8200}, {name:"Cici",score:7100}
         ]
     };
+    console.log("✅ Data game siap.");
 
     // === QUIZ QUESTIONS ===
     const QUIZZ = [
@@ -270,8 +276,10 @@
         {q:"Organ pernapasan manusia?", a:["Paru-paru","Jantung","Hati"], c:0, cat:"Biologi"},
         {q:"Gaya tarik bumi disebut?", a:["Gravitasi","Magnet","Listrik"], c:0, cat:"Fisika"},
     ];
+    console.log("✅ Quiz data siap.");
 
     // === PHASER SETUP ===
+    console.log("🔧 Inisialisasi Phaser...");
     var config = {
         type: Phaser.AUTO,
         width: 800,
@@ -283,23 +291,52 @@
         },
         scene: { preload: preload, create: create, update: update }
     };
+
     var game = new Phaser.Game(config);
     var player, cursors, platforms, enemies, spikes, blocks, door, boss;
     var isPaused = false;
     var currentTheme = "";
+    console.log("✅ Phaser siap.");
 
     // === INIT ===
-    // PERBAIKAN: Langsung masuk tanpa loading lama
     window.onload = function() {
+        console.log("🚀 Window Loaded. Memulai proses...");
+        
         // Sembunyikan loading dan langsung tampilkan lobby
-        document.getElementById('loadingScreen').style.display = 'none';
-        generateLevels();
-        generateCharacters();
-        applySettings();
-        showScreen('lobbyScreen');
+        setTimeout(() => {
+            console.log("➡️ Pindah ke Lobby...");
+            document.getElementById('loadingScreen').style.display = 'none';
+            generateLevels();
+            generateCharacters();
+            applySettings();
+            showScreen('lobbyScreen');
+        }, 500);
+    }
+
+    function preload() {
+        console.log("📥 Preload assets...");
+        // Load assets sederhana dari CDN yang pasti ada
+        this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+        this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
+        this.load.image('question', 'https://labs.phaser.io/assets/sprites/box-item.png');
+        this.load.image('spike', 'https://labs.phaser.io/assets/sprites/danger.png');
+        this.load.image('door', 'https://labs.phaser.io/assets/sprites/door.png');
+        this.load.spritesheet('dude', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+        this.load.spritesheet('enemy', 'https://labs.phaser.io/assets/sprites/baddie.png', { frameWidth: 32, frameHeight: 44 });
+        console.log("✅ Assets selesai dimuat.");
+    }
+
+    function create() {
+        console.log("🏗️ Create scene...");
+        // Fungsi create akan jalan saat game dimulai
+    }
+
+    function update() {
+        // Update loop
     }
 
     function generateLevels() {
+        console.log("🗺️ Generate level buttons...");
         let cont = document.querySelector("#levelScreen > div");
         for(let i=1; i<=25; i++){
             let btn = document.createElement('button');
@@ -317,54 +354,5 @@
     }
 
     function generateCharacters() {
+        console.log("👥 Generate characters...");
         let cont = document.getElementById('charList');
-        GAME.chars = [];
-        for(let i=0; i<90; i++){
-            let skill = GAME.skills[Math.floor(Math.random()*GAME.skills.length)];
-            GAME.chars.push({id:i, name:"Hero "+(i+1), skill:skill});
-            let btn = document.createElement('button');
-            btn.className = "char-btn";
-            btn.innerHTML = `#${i+1}<br/>${skill}`;
-            btn.onclick = function(){ 
-                GAME.charId = i; 
-                alert(`Pilih: ${GAME.chars[i].name} | Skill: ${GAME.chars[i].skill}`);
-            };
-            cont.appendChild(btn);
-        }
-    }
-
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-        document.getElementById(id).style.display = 'flex';
-    }
-
-    function applySettings() {
-        if(GAME.theme == 'dark') {
-            document.body.style.background = "#111";
-        } else {
-            document.body.style.background = "linear-gradient(135deg, #1e3c72, #2a5298)";
-        }
-
-        const bgColors = {
-            blue: "linear-gradient(135deg, #1a2980, #26d0ce)",
-            dark: "linear-gradient(135deg, #000000, #434343)",
-            sunset: "linear-gradient(135deg, #ee0979, #ff6a00)",
-            green: "linear-gradient(135deg, #56ab2f, #a8e063)"
-        };
-        document.getElementById('lobbyBg').style.background = bgColors[GAME.bgLobby];
-    }
-
-    function saveSettings() {
-        GAME.name = document.getElementById('setName').value || "Hero";
-        GAME.volume = document.getElementById('setVolume').value;
-        GAME.lang = document.getElementById('setLang').value;
-        GAME.theme = document.getElementById('setTheme').value;
-        GAME.bgLobby = document.getElementById('setBg').value;
-        applySettings();
-        alert("Pengaturan disimpan!");
-        showScreen('lobbyScreen');
-    }
-
-    function openLevelSelect() { showScreen('levelScreen'); }
-    function openCharacterSelect() { showScreen('charScreen'); }
-    function openLeaderboard() { showScreen('leaderboardScreen');
