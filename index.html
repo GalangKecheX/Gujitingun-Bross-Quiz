@@ -8,30 +8,36 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
         body { 
-            background: #1e3c72; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh;
-            overflow: hidden;
+            background: linear-gradient(135deg, #1e3c72, #2a5298); 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; overflow: hidden;
         }
         #game-container { border: 4px solid #fff; box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; }
-        .ui-bar { position: absolute; top: 10px; left: 10px; color: white; font-size: 18px; z-index: 100; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px; pointer-events: none; }
+        .ui-bar { 
+            position: absolute; top: 10px; left: 10px; color: white; font-size: 18px; 
+            z-index: 100; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 10px;
+        }
         .screen {
-            position: absolute; width: 800px; height: 600px; background: rgba(0,0,0,0.9);
-            display: none; flex-direction: column; justify-content: center; align-items: center;
+            position: absolute; width: 800px; height: 600px;
+            background: rgba(0,0,0,0.85); display: none;
+            flex-direction: column; justify-content: center; align-items: center;
             color: white; z-index: 500; text-align: center;
         }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #4CAF50; border: none; color: white; font-weight: bold; border-radius: 5px; width: 200px; }
-        button:hover { background: #45a049; }
-        .grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .screen h1 { font-size: 40px; margin-bottom: 20px; color: #ffcc00; }
+        button {
+            padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer;
+            background: #4CAF50; border: none; border-radius: 5px; color: white;
+            transition: 0.2s; min-width: 150px;
+        }
+        button:hover { background: #45a049; transform: scale(1.05); }
+        .grid-level { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="hud" class="ui-bar" style="display:none;">
-        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Player</span>
+        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Hero</span>
     </div>
 
     <div id="loadingScreen" class="screen" style="display:flex;">
@@ -46,37 +52,41 @@
 
     <div id="levelScreen" class="screen">
         <h2>🗺️ PILIH LEVEL</h2>
-        <div id="levelList" class="grid-container"></div>
+        <div id="levelGrid" class="grid-level"></div>
         <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
     </div>
 
     <div id="settingsScreen" class="screen">
         <h2>⚙️ SETTINGS</h2>
-        <input type="text" id="setName" placeholder="Nama Hero" style="padding:10px; margin:10px;">
+        <input type="text" id="setName" placeholder="Nama Hero" style="padding: 8px; margin: 10px;">
         <button onclick="saveSettings()">💾 SAVE</button>
         <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
     </div>
 </div>
 
 <script>
-    // --- KONFIGURASI GAME ---
+    let GAME_STATE = { score: 0, lives: 3, name: "Hero", active: false };
+    var player, cursors, platforms;
+
+    // PHASER CONFIG
     const config = {
         type: Phaser.AUTO,
         width: 800,
         height: 600,
         parent: 'game-container',
-        physics: { default: 'arcade', arcade: { gravity: { y: 600 }, debug: false } },
+        physics: {
+            default: 'arcade',
+            arcade: { gravity: { y: 600 }, debug: false }
+        },
         scene: { preload: preload, create: create, update: update }
     };
 
-    let game = new Phaser.Game(config);
-    let player, platforms, cursors, score = 0, scoreText;
+    const game = new Phaser.Game(config);
 
     function preload() {
-        // Load placeholder assets agar tidak error jika URL mati
+        // Menggunakan placeholder assets dari Phaser Labs
         this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
         this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
-        this.load.image('star', 'https://labs.phaser.io/assets/demoscene/star.png');
         this.load.spritesheet('dude', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     }
 
@@ -111,14 +121,17 @@
             repeat: -1
         });
 
-        cursors = this.input.keyboard.createCursorKeys();
         this.physics.add.collider(player, platforms);
-
-        // Berhenti dulu sampai tombol Play ditekan
+        cursors = this.input.keyboard.createCursorKeys();
+        
+        // Sembunyikan game saat awal
         this.scene.pause();
+        game.canvas.style.display = 'none';
     }
 
     function update() {
+        if (!GAME_STATE.active) return;
+
         if (cursors.left.isDown) {
             player.setVelocityX(-160);
             player.anims.play('left', true);
@@ -135,42 +148,55 @@
         }
     }
 
-    // --- LOGIKA UI ---
-    function showScreen(screenId) {
+    // UI FUNCTIONS
+    function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-        document.getElementById(screenId).style.display = 'flex';
+        document.getElementById(id).style.display = 'flex';
+        
+        if(id === 'lobbyScreen') {
+            game.canvas.style.display = 'none';
+            document.getElementById('hud').style.display = 'none';
+            GAME_STATE.active = false;
+        }
     }
 
-    function startGame(level) {
-        showScreen('none'); // Sembunyikan semua screen
+    function startGame(lvl) {
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        game.canvas.style.display = 'block';
         document.getElementById('hud').style.display = 'block';
+        
+        GAME_STATE.active = true;
         game.scene.scenes[0].scene.resume();
-        console.log("Memulai Level: " + level);
+        
+        // Reset player position
+        player.x = 100;
+        player.y = 450;
+        player.setVelocity(0);
     }
 
     function saveSettings() {
-        const name = document.getElementById('setName').value;
-        if(name) document.getElementById('pName').innerText = name;
+        let n = document.getElementById('setName').value;
+        if(n) {
+            GAME_STATE.name = n;
+            document.getElementById('pName').innerText = n;
+            alert("Nama disimpan: " + n);
+        }
         showScreen('lobbyScreen');
     }
 
-    // Generate Tombol Level
-    const levelContainer = document.getElementById('levelList');
-    for (let i = 1; i <= 10; i++) {
-        let btn = document.createElement('button');
-        btn.innerText = "Lv " + i;
-        btn.style.width = "70px";
-        btn.onclick = () => startGame(i);
-        levelContainer.appendChild(btn);
-    }
-
-    // Inisialisasi awal
+    // INIT
     window.onload = () => {
-        setTimeout(() => {
-            showScreen('lobbyScreen');
-        }, 1000);
+        // Generate Level Buttons
+        const grid = document.getElementById('levelGrid');
+        for(let i=1; i<=10; i++) {
+            let b = document.createElement('button');
+            b.innerText = "Level " + i;
+            b.onclick = () => startGame(i);
+            grid.appendChild(b);
+        }
+        
+        setTimeout(() => showScreen('lobbyScreen'), 1000);
     };
 </script>
-
 </body>
 </html>
