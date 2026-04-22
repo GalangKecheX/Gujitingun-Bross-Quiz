@@ -14,9 +14,7 @@
             align-items: center; 
             min-height: 100vh;
             padding: 10px;
-            transition: background 0.5s;
         }
-        body.dark-mode { background: #111; }
         #game-container { 
             border: 4px solid #fff; 
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
@@ -53,68 +51,23 @@
         }
         .screen.active { display: flex; }
         .screen h1 { font-size: 48px; margin-bottom: 20px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00;}
-        .screen h2 { font-size: 24px; margin: 15px 0; }
         button {
-            padding: 12px 25px;
-            margin: 8px;
-            font-size: 18px;
-            cursor: pointer;
-            background: #4CAF50;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            min-width: 200px;
-            transition: 0.2s;
-        }
-        button:hover { background: #45a049; transform: scale(1.05); }
-        button:disabled {
-            background: #555 !important;
-            color: #999 !important;
-            cursor: not-allowed;
-            transform: none;
-            border: 2px solid #333;
-        }
-        input, select {
-            padding: 10px;
-            font-size: 18px;
+            padding: 15px 30px;
             margin: 10px;
-            width: 250px;
-            text-align: center;
-            border-radius: 8px;
-            border: 2px solid #ccc;
-        }
-        .grid-char {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-            max-height: 350px;
-            overflow-y: auto;
-            padding: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            width: 90%;
-        }
-        .char-btn {
-            width: 80px;
-            height: 80px;
-            font-size: 10px;
-            padding: 5px;
-            background: linear-gradient(145deg, #3498db, #2980b9);
-            border: 3px solid #fff;
-            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            border: none;
+            border-radius: 12px;
             color: white;
             font-weight: bold;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            min-width: 250px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        .char-btn .char-icon { font-size: 30px; margin-bottom: 3px; }
-        .char-btn.selected {
-            border-color: #ffdd00;
-            box-shadow: 0 0 15px #ffdd00;
-            background: linear-gradient(145deg, #f39c12, #e67e22);
+        button:hover { 
+            transform: translateY(-2px) scale(1.05); 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
         .level-grid {
             display: grid;
@@ -125,13 +78,25 @@
         }
         .level-btn {
             aspect-ratio: 1;
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: bold;
             background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
-            border: 3px solid #fff;
+            border: 4px solid #fff;
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .level-btn:hover:not(.locked) { 
+            transform: scale(1.1); 
+            box-shadow: 0 0 25px #ffdd00;
         }
         .level-btn.locked {
-            background: #555;
-            opacity: 0.5;
+            background: linear-gradient(145deg, #666, #444);
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .level-btn.locked::after {
             content: "🔒";
@@ -139,347 +104,201 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 32px;
+            font-size: 36px;
+            z-index: 1;
         }
-        .stars { font-size: 40px; margin: 15px 0; }
-        .star { color: #555; transition: all 0.3s; }
-        .star.gold { color: #ffdd00; text-shadow: 0 0 10px #ffdd00; }
+        .stars { font-size: 20px; margin-top: 5px; }
+        .star { color: #aaa; }
+        .star.gold { color: #ffdd00; text-shadow: 0 0 8px #ffdd00; animation: glow 1s infinite alternate; }
+        @keyframes glow { 0%,100%{text-shadow:0 0 8px #ffdd00} 50%{text-shadow:0 0 20px #ffdd00,0 0 30px #ffdd00} }
         .mobile-controls {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            display: none;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 200;
+            position: absolute; bottom: 10px; width: 100%; display: none; justify-content: space-between; padding: 0 20px; z-index: 200;
         }
         .ctrl-btn {
-            width: 60px;
-            height: 60px;
-            font-size: 30px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid white;
-            color: white;
-            border-radius: 50%;
-            min-width: unset;
+            width: 70px; height: 70px; font-size: 32px; background: rgba(255,255,255,0.2); border: 3px solid white; color: white; border-radius: 50%; transition: all 0.2s;
         }
-        @media (max-width: 800px) {
-            .mobile-controls { display: flex; }
-            #phaser-game { width: 100vw; height: 100vh; }
-            .screen { width: 100vw; height: 100vh; }
-        }
+        .ctrl-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.4); }
+        @media (max-width: 800px) { .mobile-controls { display: flex; } #phaser-game { width: 100vw; height: 100vh; } .screen { width: 100vw; height: 100vh; } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <!-- Phaser Canvas -->
     <div id="phaser-game"></div>
-    
-    <!-- UI HUD -->
     <div id="hud" class="ui-bar" style="display:none;">
-        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Player</span> | ⚔️ <span id="skill">Skill</span>
+        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Hero</span> | ⚔️ <span id="skill">Fireball</span>
     </div>
-
-    <!-- MOBILE CONTROLS -->
     <div class="mobile-controls">
-        <div>
-            <button class="ctrl-btn" id="btnLeft">◀️</button>
-            <button class="ctrl-btn" id="btnRight">▶️</button>
-        </div>
-        <div>
-            <button class="ctrl-btn" id="btnJump">⬆️</button>
-            <button class="ctrl-btn" id="btnSkill">⚔️</button>
-        </div>
+        <div><button class="ctrl-btn" id="btnLeft">◀️</button><button class="ctrl-btn" id="btnRight">▶️</button></div>
+        <div><button class="ctrl-btn" id="btnJump">⬆️</button><button class="ctrl-btn" id="btnSkill">⚔️</button></div>
     </div>
 </div>
 
-<!-- SCREENS -->
+<!-- INSTANT LOADING SCREEN (0.3 detik) -->
 <div id="loadingScreen" class="screen active">
     <h1>🎮 SUPER ADVENTURE WORLD</h1>
-    <div style="font-size:20px; margin:20px;">Loading Assets...</div>
-    <div style="width:300px; height:20px; background:#333; border-radius:10px; overflow:hidden;">
-        <div id="loadBar" style="width:0%; height:100%; background:lime; transition: width 0.3s;"></div>
+    <div style="font-size:24px; margin:20px 0;">Assets Loaded!</div>
+    <div style="width:350px; height:25px; background:#333; border-radius:12px; overflow:hidden;">
+        <div id="loadBar" style="width:100%; height:100%; background:linear-gradient(90deg, lime, #00ff88); box-shadow:0 0 10px lime;"></div>
     </div>
 </div>
 
+<!-- LOBBY -->
 <div id="lobbyScreen" class="screen">
     <h1>🏰 MENU UTAMA</h1>
     <button onclick="openLevelSelect()">🎮 PLAY GAME</button>
-    <button onclick="openCharacterSelect()">👥 CHARACTERS (90)</button>
+    <button onclick="openShop()">🛒 SHOP</button>
     <button onclick="openLeaderboard()">🏆 LEADERBOARD</button>
-    <button onclick="openAchievements()">🎖️ ACHIEVEMENTS</button>
-    <button onclick="openSettings()">⚙️ SETTINGS</button>
-    <button onclick="exitGame()">🚪 EXIT</button>
 </div>
 
+<!-- LEVEL SELECT -->
 <div id="levelScreen" class="screen">
-    <h2>🗺️ PILIH LEVEL</h2>
-    <p style="color: #aaa; margin-bottom: 15px;">Selesaikan level untuk membuka yang baru!</p>
+    <h2 style="font-size:32px;">🗺️ PILIH LEVEL</h2>
+    <p style="color:#ccc; margin:15px 0;">Selesaikan untuk buka level baru! (5/50 unlocked)</p>
     <div class="level-grid" id="levelContainer"></div>
-    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
-</div>
-
-<div id="charScreen" class="screen">
-    <h2>👥 PILIH KARAKTER</h2>
-    <p style="color: #aaa; margin-bottom: 10px;">Pilih karakter dan gunakan skill uniknya!</p>
-    <div class="grid-char" id="charList"></div>
-    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
-</div>
-
-<div id="settingsScreen" class="screen">
-    <h2>⚙️ PENGATURAN</h2>
-    <div>
-        <label>Nama Player:</label><br>
-        <input type="text" id="setName" placeholder="Masukkan Nama">
-    </div>
-    <div>
-        <label>Volume Musik:</label><br>
-        <input type="range" id="setVolume" min="0" max="100" value="50">
-    </div>
-    <div>
-        <label>Bahasa:</label><br>
-        <select id="setLang">
-            <option value="id">🇮🇩 Indonesia</option>
-            <option value="en">🇺🇸 English</option>
-        </select>
-    </div>
-    <div>
-        <label>Tampilan:</label><br>
-        <select id="setTheme">
-            <option value="light">☀️ Light Mode</option>
-            <option value="dark">🌙 Dark Mode</option>
-        </select>
-    </div>
-    <button onclick="saveSettings()">💾 SIMPAN</button>
-    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
+    <button onclick="showScreen('lobbyScreen')">🔙 KEMBALI</button>
 </div>
 
 <script>
-    // Game State
-    let game, currentLevel = 1, selectedChar = 0;
-    const gameData = {
-        playerName: 'Player',
-        lives: 3,
-        score: 0,
-        unlockedLevels: 5,
-        characters: 90,
-        levelStars: Array(50).fill(0)
-    };
+    // GAME DATA
+    let gameData = {lives:3, score:0, unlockedLevels:5, levelStars:[3,2,3,1,0,0,0,0,0,0]};
+    let game;
 
-    // DOM Elements
-    const screens = {};
-    const hudElements = {
-        lives: document.getElementById('lives'),
-        score: document.getElementById('score'),
-        pName: document.getElementById('pName'),
-        skill: document.getElementById('skill')
-    };
-
-    // Init
-    window.addEventListener('load', function() {
-        // Collect all screens
-        document.querySelectorAll('.screen').forEach(screen => {
-            screens[screen.id] = screen;
-        });
-        
-        // Simulate loading
-        let loadProgress = 0;
-        const loadBar = document.getElementById('loadBar');
-        const loadingInterval = setInterval(() => {
-            loadProgress += Math.random() * 15;
-            if (loadProgress > 95) loadProgress = 95;
-            loadBar.style.width = loadProgress + '%';
-        }, 100);
-
+    // INSTANT LOAD (0.3 detik)
+    window.addEventListener('load', () => {
+        document.getElementById('loadBar').style.width = '100%';
         setTimeout(() => {
-            clearInterval(loadingInterval);
-            loadBar.style.width = '100%';
-            setTimeout(() => {
-                showScreen('lobbyScreen');
-            }, 500);
-        }, 2000);
+            document.getElementById('loadingScreen').classList.remove('active');
+            document.getElementById('lobbyScreen').classList.add('active');
+        }, 300);
     });
 
-    // Screen Management
-    function showScreen(screenId) {
-        Object.values(screens).forEach(s => s.classList.remove('active'));
-        screens[screenId].classList.add('active');
-        
-        if (screenId === 'lobbyScreen') generateLobby();
-        if (screenId === 'levelScreen') generateLevels();
-        if (screenId === 'charScreen') generateCharacters();
-    }
-
-    // Lobby Functions
-    function generateLobby() {
-        // Dynamic lobby background could be added here
+    // SCREEN FUNCTIONS
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 
     function openLevelSelect() {
         showScreen('levelScreen');
+        generateLevels();
     }
 
-    function openCharacterSelect() {
-        showScreen('charScreen');
-    }
-
-    function openLeaderboard() {
-        alert('🏆 Leaderboard - Coming Soon!\n\n#1 Player1 - 999999\n#2 You - ' + gameData.score);
-    }
-
-    function openAchievements() {
-        alert('🎖️ Achievements - 12/50 Unlocked!\n\n✅ First Win\n✅ 100 Kills\n🔒 Beat Hard Mode');
-    }
-
-    function openSettings() {
-        showScreen('settingsScreen');
-        document.getElementById('setName').value = gameData.playerName;
-    }
-
-    function exitGame() {
-        if (confirm('Keluar dari game?')) {
-            alert('Terima kasih telah bermain Super Adventure World! 👋');
-        }
-    }
-
-    // Level Select
     function generateLevels() {
         const container = document.getElementById('levelContainer');
         container.innerHTML = '';
-        
-        for (let i = 1; i <= 50; i++) {
+        for(let i=1; i<=50; i++) {
             const btn = document.createElement('button');
             btn.className = 'level-btn';
-            btn.innerHTML = `${i}`;
+            btn.textContent = i;
             
-            if (i > gameData.unlockedLevels) {
-                btn.classList.add('locked');
-                btn.disabled = true;
-            } else {
-                btn.onclick = () => startLevel(i);
+            if(i <= gameData.unlockedLevels) {
+                btn.onclick = () => startGame(i);
                 const stars = document.createElement('div');
-                stars.className = 'level-stars stars';
-                for (let s = 0; s < 3; s++) {
+                stars.className = 'stars';
+                for(let s=0; s<3; s++) {
                     const star = document.createElement('span');
-                    star.className = 'star';
-                    if (s < gameData.levelStars[i-1]) star.classList.add('gold');
+                    star.className = `star ${s < gameData.levelStars[i-1] ? 'gold' : ''}`;
                     star.textContent = '⭐';
                     stars.appendChild(star);
                 }
                 btn.appendChild(stars);
+            } else {
+                btn.classList.add('locked');
             }
-            
             container.appendChild(btn);
         }
     }
 
-    function startLevel(level) {
-        alert(`🚀 Memulai Level ${level}!\n\nGame akan dimuat sebentar lagi...`);
-        // Hide UI screens
-        Object.values(screens).forEach(s => s.classList.remove('active'));
+    function startGame(level) {
+        // Hide menus
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('hud').style.display = 'block';
         
-        // Update HUD
-        updateHUD();
-        
-        // Start Phaser Game (simple demo)
-        initPhaserGame(level);
+        // Start Phaser Demo Game
+        initPhaserDemo(level);
     }
 
-    // Character Select
-    function generateCharacters() {
-        const container = document.getElementById('charList');
-        container.innerHTML = '';
-        
-        const chars = [
-            {icon: '🦸‍♂️', name: 'Hero'},
-            {icon: '🧙‍♂️', name: 'Mage'},
-            {icon: '🏹', name: 'Archer'},
-            {icon: '⚔️', name: 'Knight'},
-            {icon: '🥷', name: 'Ninja'},
-            {icon: '🔮', name: 'Wizard'},
-            // Add more...
-        ];
-        
-        chars.forEach((char, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'char-btn';
-            btn.innerHTML = `
-                <div class="char-icon">${char.icon}</div>
-                ${char.name}
-            `;
-            btn.onclick = () => selectCharacter(index);
-            container.appendChild(btn);
-        });
-    }
-
-    function selectCharacter(index) {
-        document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
-        event.target.classList.add('selected');
-        selectedChar = index;
-        gameData.skill = 'Skill ' + (index + 1);
-    }
-
-    // Settings
-    function saveSettings() {
-        gameData.playerName = document.getElementById('setName').value || 'Player';
-        alert('⚙️ Pengaturan disimpan!');
-        updateHUD();
-        showScreen('lobbyScreen');
-    }
-
-    // HUD Update
-    function updateHUD() {
-        hudElements.lives.textContent = gameData.lives;
-        hudElements.score.textContent = gameData.score;
-        hudElements.pName.textContent = gameData.playerName;
-        hudElements.skill.textContent = gameData.skill || 'Skill 1';
-    }
-
-    // Phaser Game (Simple Demo)
-    function initPhaserGame(level) {
+    // SIMPLE PHASER GAME (NO EXTERNAL ASSETS)
+    function initPhaserDemo(level) {
         const config = {
             type: Phaser.AUTO,
             width: 800,
             height: 600,
             parent: 'phaser-game',
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            },
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 300 },
-                    debug: false
-                }
-            }
+            backgroundColor: '#2d5aa0',
+            physics: { default: 'arcade', arcade: { gravity: { y: 500 } } },
+            scene: { create, update }
         };
 
         game = new Phaser.Game(config);
-        let player, platforms, cursors, scoreText;
-
-        function preload() {
-            this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
-            this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
-            this.load.image('star', 'https://labs.phaser.io/assets/sprites/star.png');
-            this.load.spritesheet('dude', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-        }
+        let player, platforms, stars, score = 0, scoreText;
+        const gameData = {lives:3, score:0};
 
         function create() {
-            this.add.image(400, 300, 'sky');
-            
+            // Platforms
             platforms = this.physics.add.staticGroup();
-            platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-            platforms.create(600, 400, 'ground');
-            platforms.create(50, 250, 'ground');
-            platforms.create(750, 220, 'ground');
+            platforms.create(400, 580, 'rect').setScale(4, 0.5).setOrigin(0.5).setTint(0x00ff00).refreshBody();
+            platforms.create(200, 400, 'rect').setScale(1.5, 0.5).setOrigin(0.5).setTint(0x6666ff).refreshBody();
+            platforms.create(600, 300, 'rect').setScale(1.5, 0.5).setOrigin(0.5).setTint(0x6666ff).refreshBody();
 
-            player = this.physics.add.sprite(100, 450, 'dude');
-            player.setBounce(0.2);
-            player.setCollideWorldBounds(true);
+            // Player (rectangle)
+            player = this.physics.add.sprite(100, 450, 'rect');
+            player.setScale(1.5, 2).setTint(0xff4444).setCollideWorldBounds(true);
+            this.physics.add.collider(player, platforms);
 
-            this.anims.create({
-                key:
+            // Stars (collectibles)
+            stars = this.physics.add.group({
+                key: 'rect',
+                repeat: 11,
+                setScale: { x: 0.5, y: 0.5 },
+                setXY: { x: 12, y: 0, stepX: 70 }
+            });
+            stars.children.iterate(child => {
+                child.setTint(0xffff00);
+                child.setBounce(0.5);
+            });
+            this.physics.add.collider(stars, platforms);
+            this.physics.add.overlap(player, stars, collectStar, null, this);
+
+            // Score
+            scoreText = this.add.text(16, 16, `Level ${level} | Score: 0 | ❤️ ${gameData.lives}`, {
+                fontSize: '24px',
+                fill: '#fff',
+                stroke: '#000',
+                strokeThickness: 4
+            });
+
+            // Controls
+            this.cursors = this.input.keyboard.createCursorKeys();
+        }
+
+        function update() {
+            if (this.cursors.left.isDown) player.setVelocityX(-200);
+            else if (this.cursors.right.isDown) player.setVelocityX(200);
+            else player.setVelocityX(0);
+
+            if (this.cursors.up.isDown && player.body.touching.down) player.setVelocityY(-400);
+        }
+
+        function collectStar(player, star) {
+            star.disableBody(true, true);
+            score += 10;
+            scoreText.setText(`Level ${level} | Score: ${score} | ❤️ ${gameData.lives}`);
+            
+            if (stars.countActive(true) === 0) {
+                scoreText.setText('🎉 LEVEL COMPLETE! 🎉\nPress F5 to restart');
+            }
+        }
+    }
+
+    function openShop() {
+        alert('🛒 SHOP\n\n💎 Coins: ' + gameData.score + '\n\n🔥 Fire Sword - 500\n🛡️ Iron Shield - 300\n⚡ Speed Boots - 200');
+    }
+
+    function openLeaderboard() {
+        alert('🏆 TOP 10\n\n#1 ProGamer - 999999\n#2 Legend - 875432\n#3 You - ' + gameData.score);
+    }
+</script>
+</body>
+</html>
