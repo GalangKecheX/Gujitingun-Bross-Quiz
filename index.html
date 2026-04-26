@@ -3,230 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Adventure World - Pro</title>
+    <title>Super Adventure World</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        :root { --bg-color: #1e3c72; --text-color: white; }
-        body.dark-mode { --bg-color: #000000; --text-color: #e0e0e0; }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
-        body { background: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; transition: 0.3s; }
-        
-        #game-holder { position: relative; width: 800px; height: 600px; border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); background: #000; }
-        .screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        /* Mengembalikan Background Biru Gradient sesuai image_577918.jpg */
+        body { 
+            margin: 0; padding: 0; overflow: hidden;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+            font-family: 'Arial', sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+
+        #game-container { 
+            position: relative; width: 800px; height: 600px; 
+            border: 5px solid #fff; border-radius: 10px; overflow: hidden; background: #000;
+        }
+
+        /* UI Screens */
+        .screen {
+            position: absolute; width: 100%; height: 100%;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; color: white;
+        }
         .active { display: flex; }
 
-        /* Grid Styling */
-        .grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 90%; max-height: 350px; overflow-y: auto; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        
-        button { padding: 12px; margin: 5px; cursor: pointer; background: #4CAF50; border: none; border-radius: 5px; color: white; font-weight: bold; transition: 0.2s; }
-        button:hover:not(:disabled) { background: #45a049; transform: scale(1.05); }
-        button:disabled { background: #555; opacity: 0.6; cursor: not-allowed; }
+        /* Button Styling sesuai image_577918.jpg */
+        .menu-btn {
+            background: #4CAF50; border: none; border-radius: 8px; color: white;
+            padding: 12px 25px; margin: 8px; width: 300px; font-size: 18px;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .menu-btn:hover { background: #45a049; transform: scale(1.05); }
+        .menu-btn:disabled { background: #666; cursor: not-allowed; opacity: 0.7; }
 
-        .char-card { background: #333; padding: 10px; border-radius: 8px; text-align: center; border: 2px solid transparent; cursor: pointer; }
-        .char-card.locked { filter: grayscale(1); opacity: 0.7; }
-        .char-card.selected { border-color: #ffcc00; background: #444; }
-        
-        #hud { position: absolute; top: 10px; left: 10px; color: white; z-index: 50; display: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; }
-        select, input { padding: 10px; width: 250px; margin: 10px; border-radius: 5px; }
+        /* Character Grid sesuai image_57083e.png */
+        .grid-view {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+            max-height: 350px; overflow-y: auto; padding: 20px; width: 90%;
+            background: rgba(0,0,0,0.5); border-radius: 10px;
+        }
+        .char-item {
+            background: #2196F3; border-radius: 10px; padding: 10px; text-align: center;
+            border: 2px solid transparent; cursor: pointer;
+        }
+        .char-item.locked { background: #444; opacity: 0.8; }
+        .char-item.selected { border-color: #FFEB3B; box-shadow: 0 0 10px #FFEB3B; }
+
+        /* HUD - Perbaikan posisi agar tidak hitam kosong (image_576cc3.png) */
+        #hud {
+            position: absolute; top: 15px; left: 15px; z-index: 100;
+            background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px;
+            display: none; color: white; border: 1px solid #555;
+        }
     </style>
 </head>
 <body>
 
-<div id="game-holder">
+<div id="game-container">
     <div id="hud">
-        ❤️ <span id="h-lives">3</span> | 💰 <span id="h-coins">0</span> | 🚩 Lvl: <span id="h-lvl">1</span>
+        ❤️ <span id="h-lives">3</span> | 💰 <span id="h-coins">0</span> | 👤 <span id="h-name">Hero</span>
     </div>
 
-    <div id="m-main" class="screen active">
-        <h1 id="t-menu">MENU UTAMA</h1>
-        <button onclick="nav('m-level')" id="b-play">PLAY GAME</button>
-        <button onclick="nav('m-char')" id="b-char">CHARACTERS (99)</button>
-        <button onclick="nav('m-set')" id="b-settings">SETTINGS</button>
-    </div>
-
-    <div id="m-level" class="screen">
-        <h2 id="t-level">PILIH LEVEL</h2>
-        <div id="level-grid" class="grid-container"></div>
-        <button onclick="nav('m-main')" id="b-back1">BACK</button>
+    <div id="m-utama" class="screen active">
+        <h1 id="txt-title">🏰 MENU UTAMA</h1>
+        <button class="menu-btn" onclick="openScreen('m-level')">🎮 <span id="btn-play">PLAY GAME</span></button>
+        <button class="menu-btn" onclick="openScreen('m-char')">👥 <span id="btn-char">CHARACTERS (99)</span></button>
+        <button class="menu-btn" onclick="openScreen('m-lead')">🏆 <span id="btn-lead">LEADERBOARD</span></button>
+        <button class="menu-btn" onclick="openScreen('m-ach')">🏅 <span id="btn-ach">ACHIEVEMENTS</span></button>
+        <button class="menu-btn" onclick="openScreen('m-set')">⚙️ <span id="btn-set">SETTINGS</span></button>
+        <button class="menu-btn" onclick="window.close()">🚪 <span id="btn-exit">EXIT</span></button>
     </div>
 
     <div id="m-char" class="screen">
-        <h2 id="t-char">PILIH KARAKTER</h2>
-        <p><span id="t-your-coin">Koin Kamu:</span> <b id="player-coins">0</b></p>
-        <div id="char-grid" class="grid-container"></div>
-        <button onclick="nav('m-main')" id="b-back2">BACK</button>
+        <h2 id="txt-char-title">👤 PILIH KARAKTER</h2>
+        <div class="grid-view" id="char-list"></div>
+        <button class="menu-btn" style="width:150px; background:#f44336;" onclick="openScreen('m-utama')">BACK</button>
+    </div>
+
+    <div id="m-level" class="screen">
+        <h2 id="txt-level-title">🗺️ PILIH LEVEL</h2>
+        <div class="grid-view" id="level-list"></div>
+        <button class="menu-btn" style="width:150px; background:#f44336;" onclick="openScreen('m-utama')">BACK</button>
     </div>
 
     <div id="m-set" class="screen">
-        <h2 id="t-set">PENGATURAN</h2>
-        <input type="text" id="in-name" placeholder="Nama Player">
-        <select id="s-lang">
+        <h2 id="txt-set-title">⚙️ SETTINGS</h2>
+        <label>Language:</label>
+        <select id="lang-select" onchange="applyLanguage()">
             <option value="id">Bahasa Indonesia</option>
-            <option value="en">English</option>
+            <option value="en">English (US)</option>
         </select>
-        <select id="s-theme">
-            <option value="light">Light Mode</option>
-            <option value="dark">Dark Mode</option>
-        </select>
-        <select id="s-bg">
-            <option value="blue">Blue Sky</option>
-            <option value="space">Space (Dark)</option>
-        </select>
-        <button onclick="saveSettings()">SIMPAN (SAVE)</button>
-        <button onclick="nav('m-main')">BACK</button>
+        <button class="menu-btn" style="width:150px;" onclick="openScreen('m-utama')">SAVE & BACK</button>
     </div>
 </div>
 
 <script>
-    // --- DATABASE GAME ---
+    // --- DATA SISTEM ---
     const GAME_DATA = {
-        coins: 500, // Modal awal 500 koin
-        maxLevel: 1,
-        lang: 'id',
-        selectedChar: 0,
-        unlockedChars: [0], // Hanya Char 1 yang terbuka
-        playerName: "Player"
+        coins: 1000,
+        unlockedLevels: 1,
+        selectedCharIdx: 0,
+        unlockedChars: [0], // Char 0 default terbuka
+        lang: 'id'
     };
 
-    const LANG = {
-        id: { menu: "MENU UTAMA", play: "MAIN GAME", char: "KARAKTER (99)", set: "PENGATURAN", lvl: "PILIH LEVEL", back: "KEMBALI", yourcoin: "Koin Kamu:" },
-        en: { menu: "MAIN MENU", play: "PLAY GAME", char: "CHARACTERS (99)", set: "SETTINGS", lvl: "SELECT LEVEL", back: "BACK", yourcoin: "Your Coins:" }
-    };
+    // Generate 99 Karakter dengan Harga Varian & Syarat Quest
+    const characters = [];
+    const emojis = ["👦","👩","👨","👮","👷","🧙","🧛","🧝","🧚","🤖","👽","👾","👻","🎃","🐱"];
+    for(let i=0; i<99; i++) {
+        characters.push({
+            id: i,
+            name: "Char " + (i+1),
+            icon: emojis[i % emojis.length],
+            price: 100 + (i * 50), // Harga naik tiap karakter
+            questLvl: Math.floor(i / 4) + 1 // Harus selesaikan level tertentu
+        });
+    }
 
-    const emojis = ["👦","🥷","🧙","🧛","🧚","🧜","🤖","👽","👻","🦁","🐯","🦊","🐵","👮","👷"];
-
-    // --- LOGIKA MENU ---
-    function nav(id) {
+    // --- UI LOGIC ---
+    function openScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        if(id === 'm-char') renderCharacters();
         if(id === 'm-level') renderLevels();
-        if(id === 'm-char') renderChars();
     }
 
-    function renderLevels() {
-        const grid = document.getElementById('level-grid');
-        grid.innerHTML = "";
-        for(let i=1; i<=25; i++) {
-            const btn = document.createElement('button');
-            btn.innerText = "Level " + i;
-            if(i > GAME_DATA.maxLevel) {
-                btn.disabled = true;
-                btn.innerText += " 🔒";
-            }
-            btn.onclick = () => startPhaser(i);
-            grid.appendChild(btn);
-        }
-    }
-
-    function renderChars() {
-        const grid = document.getElementById('char-grid');
-        grid.innerHTML = "";
-        document.getElementById('player-coins').innerText = GAME_DATA.coins;
-
-        for(let i=0; i<99; i++) {
-            const isUnlocked = GAME_DATA.unlockedChars.includes(i);
-            const card = document.createElement('div');
-            card.className = `char-card ${!isUnlocked ? 'locked' : ''} ${GAME_DATA.selectedChar === i ? 'selected' : ''}`;
+    function renderCharacters() {
+        const list = document.getElementById('char-list');
+        list.innerHTML = "";
+        characters.forEach((c, index) => {
+            const isUnlocked = GAME_DATA.unlockedChars.includes(index);
+            const isQuestMet = GAME_DATA.unlockedLevels >= c.questLvl;
             
-            const emoji = emojis[i % emojis.length];
-            card.innerHTML = `<div>${emoji}</div><small>${isUnlocked ? 'Hero '+i : '100 💰'}</small>`;
+            const div = document.createElement('div');
+            div.className = `char-item ${!isUnlocked ? 'locked' : ''} ${GAME_DATA.selectedCharIdx === index ? 'selected' : ''}`;
             
-            card.onclick = () => {
+            div.innerHTML = `
+                <div style="font-size:30px">${isUnlocked ? c.icon : '🔒'}</div>
+                <div style="font-size:12px">${c.name}</div>
+                <div style="font-size:10px">${isUnlocked ? 'OWNED' : '💰' + c.price}</div>
+                ${!isUnlocked ? `<div style="font-size:9px; color:#ffeb3b">Quest: Lvl ${c.questLvl}</div>` : ''}
+            `;
+
+            div.onclick = () => {
                 if(isUnlocked) {
-                    GAME_DATA.selectedChar = i;
-                    renderChars();
-                } else if(GAME_DATA.coins >= 100) {
-                    if(confirm("Beli karakter ini?")) {
-                        GAME_DATA.coins -= 100;
-                        GAME_DATA.unlockedChars.push(i);
-                        renderChars();
+                    GAME_DATA.selectedCharIdx = index;
+                    renderCharacters();
+                } else {
+                    if(!isQuestMet) {
+                        alert(`Selesaikan Level ${c.questLvl} dulu untuk membuka karakter ini!`);
+                    } else if(GAME_DATA.coins >= c.price) {
+                        if(confirm(`Beli ${c.name} seharga ${c.price} koin?`)) {
+                            GAME_DATA.coins -= c.price;
+                            GAME_DATA.unlockedChars.push(index);
+                            renderCharacters();
+                        }
+                    } else {
+                        alert("Koin tidak cukup!");
                     }
                 }
             };
-            grid.appendChild(card);
+            list.appendChild(div);
+        });
+    }
+
+    function renderLevels() {
+        const list = document.getElementById('level-list');
+        list.innerHTML = "";
+        for(let i=1; i<=25; i++) {
+            const isUnlocked = i <= GAME_DATA.unlockedLevels;
+            const btn = document.createElement('button');
+            btn.className = 'char-item';
+            btn.style.width = '100%';
+            btn.style.background = isUnlocked ? '#4CAF50' : '#444';
+            btn.innerHTML = `Level ${i} ${isUnlocked ? '' : '🔒'}`;
+            btn.onclick = () => isUnlocked ? startGame(i) : alert("Level Terkunci!");
+            list.appendChild(btn);
         }
     }
 
-    function saveSettings() {
-        GAME_DATA.lang = document.getElementById('s-lang').value;
-        GAME_DATA.playerName = document.getElementById('in-name').value || "Player";
+    function applyLanguage() {
+        GAME_DATA.lang = document.getElementById('lang-select').value;
+        const isEn = GAME_DATA.lang === 'en';
         
-        // Dark Mode
-        if(document.getElementById('s-theme').value === 'dark') document.body.classList.add('dark-mode');
-        else document.body.classList.remove('dark-mode');
-
-        // Lobby BG
-        const bg = document.getElementById('s-bg').value;
-        document.body.style.background = (bg === 'space') ? '#020111' : '#1e3c72';
-
-        // Apply Language
-        const l = LANG[GAME_DATA.lang];
-        document.getElementById('t-menu').innerText = l.menu;
-        document.getElementById('b-play').innerText = l.play;
-        document.getElementById('b-char').innerText = l.char;
-        document.getElementById('t-level').innerText = l.lvl;
-        document.getElementById('t-your-coin').innerText = l.yourcoin;
-        
-        alert("Saved!");
-        nav('m-main');
+        document.getElementById('txt-title').innerText = isEn ? "🏰 MAIN MENU" : "🏰 MENU UTAMA";
+        document.getElementById('btn-play').innerText = isEn ? "PLAY GAME" : "MULAI GAME";
+        document.getElementById('btn-char').innerText = isEn ? "CHARACTERS (99)" : "KARAKTER (99)";
+        document.getElementById('btn-set').innerText = isEn ? "SETTINGS" : "PENGATURAN";
+        document.getElementById('btn-exit').innerText = isEn ? "EXIT" : "KELUAR";
+        document.getElementById('txt-char-title').innerText = isEn ? "👤 SELECT CHARACTER" : "👤 PILIH KARAKTER";
+        document.getElementById('txt-level-title').innerText = isEn ? "🗺️ SELECT LEVEL" : "🗺️ PILIH LEVEL";
     }
 
-    // --- PHASER GAME ENGINE ---
+    // --- GAME ENGINE (Solusi Layar Hitam) ---
     let game;
-    function startPhaser(level) {
-        nav('none'); // Tutup semua menu
+    function startGame(lvl) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('hud').style.display = 'block';
-        document.getElementById('h-lvl').innerText = level;
         document.getElementById('h-coins').innerText = GAME_DATA.coins;
+        document.getElementById('h-name').innerText = characters[GAME_DATA.selectedCharIdx].name;
 
         if (game) game.destroy(true);
 
         const config = {
             type: Phaser.AUTO,
             width: 800, height: 600,
-            parent: 'game-holder',
+            parent: 'game-container',
             physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
             scene: {
                 preload: function() {
-                    // Pakai placeholder dari internet agar tidak hitam
-                    this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
+                    // Pakai aset eksternal agar tidak hitam
+                    this.load.image('bg', 'https://labs.phaser.io/assets/skies/space3.png');
                     this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
                 },
                 create: function() {
-                    this.add.image(400, 300, 'sky');
+                    this.add.image(400, 300, 'bg');
                     let platforms = this.physics.add.staticGroup();
-                    platforms.create(400, 580, 'ground').setScale(2).refreshBody();
+                    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
 
-                    // Buat Karakter dari Emoji
-                    const playerEmoji = emojis[GAME_DATA.selectedChar % emojis.length];
-                    this.player = this.add.text(100, 450, playerEmoji, { fontSize: '64px' });
+                    // Karakter berupa Teks Emoji agar tidak butuh file gambar luar
+                    this.player = this.add.text(100, 450, characters[GAME_DATA.selectedCharIdx].icon, { fontSize: '64px' });
                     this.physics.add.existing(this.player);
                     this.player.body.setCollideWorldBounds(true);
                     this.physics.add.collider(this.player, platforms);
 
-                    // Tombol Win Palsu untuk testing buka level
-                    let winBtn = this.add.text(600, 50, 'WIN (KLIK SAYA)', { background: '#f00', padding: 10 }).setInteractive();
-                    winBtn.on('pointerdown', () => {
-                        if(level === GAME_DATA.maxLevel) GAME_DATA.maxLevel++;
-                        alert("Level Berhasil! Level " + GAME_DATA.maxLevel + " Terbuka.");
-                        location.reload(); // Refresh balik ke menu
+                    this.add.text(200, 200, `LEVEL ${lvl} STARTED`, { fontSize: '40px', fill: '#fff' });
+                    this.add.text(200, 250, "Tekan 'W' untuk Menang (Tes Unlock Level)", { fontSize: '20px', fill: '#0f0' });
+                    
+                    this.input.keyboard.on('keydown-W', () => {
+                        if(lvl === GAME_DATA.unlockedLevels) GAME_DATA.unlockedLevels++;
+                        alert("Level Selesai! Level Berikutnya Terbuka.");
+                        location.reload(); 
                     });
-
-                    this.add.text(20, 20, "Gunakan Panah (Arrow) untuk Bergerak", { color: '#0f0' });
-                    this.cursors = this.input.keyboard.createCursorKeys();
-                },
-                update: function() {
-                    if (this.cursors.left.isDown) this.player.body.setVelocityX(-160);
-                    else if (this.cursors.right.isDown) this.player.body.setVelocityX(160);
-                    else this.player.body.setVelocityX(0);
-                    if (this.cursors.up.isDown && this.player.body.touching.down) this.player.body.setVelocityY(-400);
                 }
             }
         };
         game = new Phaser.Game(config);
     }
 </script>
-
 </body>
 </html>
