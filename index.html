@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        
         body { 
             background: linear-gradient(135deg, #1e3c72, #2a5298); 
             display: flex; 
@@ -16,13 +17,17 @@
             padding: 10px;
             transition: background 0.5s;
         }
-        body.dark-mode { background: #111; }
+        
+        /* DARK MODE - Memastikan layar hitam jika diaktifkan */
+        body.dark-mode { background: #111 !important; }
+        
         #game-container { 
             border: 4px solid #fff; 
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
             max-width: 100%;
             position: relative;
         }
+        
         .ui-bar { 
             position: absolute; 
             top: 10px; 
@@ -36,6 +41,7 @@
             padding: 5px 15px;
             border-radius: 10px;
         }
+        
         .screen {
             position: absolute;
             width: 800px;
@@ -49,9 +55,12 @@
             z-index: 500;
             padding: 20px;
             text-align: center;
+            overflow: hidden; /* Mencegah elemen keluar dari layar */
         }
+        
         .screen h1 { font-size: 48px; margin-bottom: 20px; color: #ffcc00; text-shadow: 0 0 10px #ffcc00;}
         .screen h2 { font-size: 24px; margin: 15px 0; }
+        
         button {
             padding: 12px 25px;
             margin: 8px;
@@ -73,6 +82,7 @@
             transform: none;
             border: 2px solid #333;
         }
+        
         input, select {
             padding: 10px;
             font-size: 18px;
@@ -81,28 +91,32 @@
             text-align: center;
             border-radius: 8px;
             border: 2px solid #ccc;
+            color: #000;
         }
+        
+        /* FIX: Ukuran grid karakter dan scroll */
         .grid-char {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 15px;
-            max-height: 350px;
-            overflow-y: auto;
-            padding: 10px;
+            width: 90%;
+            max-height: 400px;
+            overflow-y: auto; /* Memunculkan scroll bar */
+            padding: 15px;
             background: rgba(255,255,255,0.1);
             border-radius: 10px;
-            width: 90%;
         }
+        
         .char-btn {
+            min-width: unset; /* Mengalahkan min-width 200px dari button global */
             width: 80px;
             height: 80px;
             font-size: 10px;
             padding: 5px;
+            margin: 0 auto;
             background: linear-gradient(145deg, #3498db, #2980b9);
             border: 3px solid #fff;
             border-radius: 10px;
-            color: white;
-            font-weight: bold;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -114,45 +128,34 @@
             box-shadow: 0 0 15px #ffdd00;
             background: linear-gradient(145deg, #f39c12, #e67e22);
         }
-        .quiz-option {
-            display: block;
-            width: 80%;
-            margin: 10px auto;
-            background: #2c3e50;
+
+        /* FIX: Grid untuk Level Container agar rapi dan bisa di-scroll */
+        #levelContainer {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 350px;
+            overflow-y: auto; /* Memunculkan scroll bar untuk level */
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
         }
-        .quiz-option:hover { background: #34495e; }
+        #levelContainer button {
+            min-width: unset; /* Menghilangkan batas 200px */
+            width: 100%;
+            padding: 10px 5px;
+            margin: 0;
+            font-size: 16px;
+        }
+
         .lobby-bg {
             position: absolute;
             width: 100%;
             height: 100%;
             z-index: -1;
-        }
-        .lock-icon { font-size: 24px; color: #aaa; }
-        .stars { font-size: 40px; margin: 15px 0; }
-        .star { color: #555; transition: all 0.3s; }
-        .star.gold { color: #ffdd00; text-shadow: 0 0 10px #ffdd00; }
-        .level-stars { font-size: 14px; margin-top: 5px; }
-        .mobile-controls {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            display: none;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 200;
-        }
-        .ctrl-btn {
-            width: 60px;
-            height: 60px;
-            font-size: 30px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid white;
-            color: white;
-            border-radius: 50%;
-            min-width: unset;
-        }
-        @media (max-width: 800px) {
-            .mobile-controls { display: flex; }
+            transition: background 0.5s;
         }
     </style>
 </head>
@@ -160,23 +163,12 @@
 
 <div id="game-container">
     <div id="hud" class="ui-bar" style="display:none;">
-        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Player</span> | ⚔️ <span id="skillText">Skill</span>
-    </div>
-
-    <div class="mobile-controls">
-        <div>
-            <button class="ctrl-btn" id="btnLeft">◀️</button>
-            <button class="ctrl-btn" id="btnRight">▶️</button>
-        </div>
-        <div>
-            <button class="ctrl-btn" id="btnJump">⬆️</button>
-            <button class="ctrl-btn" id="btnSkill">⚔️</button>
-        </div>
+        ❤️ <span id="lives">3</span> | 💰 <span id="score">0</span> | 👤 <span id="pName">Player</span>
     </div>
 </div>
 
 <div id="loadingScreen" class="screen" style="display:flex;">
-    <h1>🎮 SUPER ADVENTURE WORLD</h1>
+    <h1>🎮 SUPER ADVENTURE</h1>
     <div style="font-size:20px; margin:20px;" id="loadingText">Loading... 0%</div>
     <div style="width:300px; height:20px; background:#333; border-radius:10px; overflow:hidden;">
         <div id="loadBar" style="width:0%; height:100%; background:lime; transition: width 0.1s;"></div>
@@ -185,25 +177,21 @@
 
 <div id="lobbyScreen" class="screen">
     <div class="lobby-bg" id="lobbyBg" style="background: linear-gradient(135deg, #1a2980, #26d0ce);"></div>
-    <h1>🏰 MENU UTAMA</h1>
-    <button onclick="openLevelSelect()">🎮 PLAY GAME</button>
-    <button onclick="openCharacterSelect()">👥 CHARACTERS (90)</button>
-    <button onclick="openLeaderboard()">🏆 LEADERBOARD</button>
-    <button onclick="openAchievements()">🎖️ ACHIEVEMENTS</button>
-    <button onclick="openSettings()">⚙️ SETTINGS</button>
-    <button onclick="exitGame()">🚪 EXIT</button>
+    <h1 id="menuTitle">🏰 MENU UTAMA</h1>
+    <button onclick="openLevelSelect()" id="btnPlay">🎮 PLAY GAME</button>
+    <button onclick="openCharacterSelect()" id="btnChar">👥 CHARACTERS (32)</button>
+    <button onclick="openAchievements()" id="btnAchieve">🎖️ ACHIEVEMENTS</button>
+    <button onclick="openSettings()" id="btnSet">⚙️ SETTINGS</button>
 </div>
 
 <div id="levelScreen" class="screen">
-    <h2>🗺️ PILIH LEVEL</h2>
-    <p style="color: #aaa; margin-bottom: 15px;">Selesaikan level untuk membuka yang baru!</p>
-    <div id="levelContainer" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; max-width:600px;"></div>
+    <h2 id="lvlTitle">🗺️ PILIH LEVEL</h2>
+    <div id="levelContainer"></div>
     <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
 </div>
 
 <div id="charScreen" class="screen">
-    <h2>👥 PILIH KARAKTER</h2>
-    <p style="color: #aaa; margin-bottom: 10px;">Pilih karakter dan gunakan skill uniknya!</p>
+    <h2 id="charTitle">👥 PILIH KARAKTER</h2>
     <div class="grid-char" id="charList"></div>
     <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
 </div>
@@ -212,11 +200,7 @@
     <h2>⚙️ PENGATURAN</h2>
     <div>
         <label>Nama Player:</label><br>
-        <input type="text" id="setName" placeholder="Masukkan Nama">
-    </div>
-    <div>
-        <label>Volume Musik:</label><br>
-        <input type="range" id="setVolume" min="0" max="100" value="50">
+        <input type="text" id="setName" placeholder="Nama kamu">
     </div>
     <div>
         <label>Bahasa:</label><br>
@@ -226,7 +210,7 @@
         </select>
     </div>
     <div>
-        <label>Tampilan:</label><br>
+        <label>Tampilan Luar Game:</label><br>
         <select id="setTheme">
             <option value="light">☀️ Light Mode</option>
             <option value="dark">🌙 Dark Mode</option>
@@ -235,31 +219,20 @@
     <div>
         <label>Background Lobby:</label><br>
         <select id="setBg">
-            <option value="blue">🔵 Blue</option>
-            <option value="dark">⚫ Dark</option>
+            <option value="blue">🔵 Blue Gradient</option>
+            <option value="dark">⚫ Dark Solid</option>
             <option value="sunset">🌅 Sunset</option>
-            <option value="green">🟢 Green</option>
-            <option value="space">🌌 Space</option>
+            <option value="space">🌌 Space (Bintang)</option>
         </select>
     </div>
     <button onclick="saveSettings()">💾 SIMPAN</button>
     <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
 </div>
 
-<div id="leaderboardScreen" class="screen">
-    <h1>🏆 LEADERBOARD</h1>
-    <div id="leaderboardList" style="font-size:20px; line-height:2;">
-        1. Player1 - 9999<br>
-        2. Player2 - 8888<br>
-        3. Player3 - 7777<br>
-    </div>
-    <button onclick="showScreen('lobbyScreen')">🔙 BACK</button>
-</div>
-
 <div id="achievementScreen" class="screen">
     <h1>🎖️ ACHIEVEMENTS</h1>
-    <div style="text-align:left; font-size:18px;">
-        ✅ Master Ice World<br>
+    <div style="text-align:left; font-size:18px; line-height: 2;">
+        ⬜ Master Ice World<br>
         ⬜ Beat the Boss<br>
         ⬜ Collect 1000 Coins<br>
         ⬜ Complete All Quiz<br>
@@ -269,84 +242,141 @@
 </div>
 
 <script>
-    // === GAME DATA ===
+    // === DATA GAME ===
     let GAME = {
-        name: "Hero",
-        lives: 3,
-        score: 0,
+        name: "Player",
         level: 1,
         maxLevelUnlocked: 1,
         totalLevel: 25,
-        volume: 50,
-        lang: "id",
-        theme: "light",
-        bgLobby: "blue"
+        charId: 0,
+        // Daftar 32 karakter emoji untuk di-load
+        charIcons: ["🧙","🧚","🧛","🧜","🧝","🎅","👸","🤴","👮","👷","💂","🕵️","👩‍⚕️","👨‍⚕️","👩‍🌾","👨‍🌾","👩‍🍳","👨‍🍳","👩‍🏫","👨‍🏫","👩‍⚖️","👨‍⚖️","👩‍🔧","👨‍🔧","👩‍🏭","👨‍🏭","👩‍💻","👨‍💻","👩‍🎤","👨‍🎤","👩‍🎨","👨‍🎨"]
     };
 
-    const QUIZZ = [
-        {q:"Ibukota Jawa Barat?", a:["Bandung","Jakarta","Surabaya"], c:0, cat:"Geografi"},
-        {q:"Rumus Air?", a:["H2O","CO2","NaCl"], c:0, cat:"Kimia"},
-        {q:"Planet terbesar?", a:["Jupiter","Mars","Bumi"], c:0, cat:"IPA"},
-        {q:"20 x 5 + 10 = ?", a:["110","100","90"], c:0, cat:"Matematika"},
-        {q:"Singkatan PM?", a:["Perdana Menteri","Polisi Militer","Pusat Medis"], c:0, cat:"Umum"}
-    ];
-
-    // === CORE UI FUNCTIONS ===
-    
-    // Fungsi untuk menyembunyikan semua layar dan menampilkan satu layar tujuan
+    // Fungsi ganti layar
     function showScreen(screenId) {
-        let screens = document.querySelectorAll('.screen');
-        screens.forEach(screen => {
+        document.querySelectorAll('.screen').forEach(screen => {
             screen.style.display = 'none';
         });
         document.getElementById(screenId).style.display = 'flex';
     }
 
-    // Fungsi-fungsi Navigasi Tombol
+    // === GENERATE LEVEL KETIKA KLIK PLAY ===
     function openLevelSelect() { 
         showScreen('levelScreen'); 
-        generateLevelButtons();
-    }
-    
-    function openCharacterSelect() { 
-        showScreen('charScreen'); 
-    }
-    
-    function openLeaderboard() { 
-        showScreen('leaderboardScreen'); 
-    }
-    
-    function openAchievements() { 
-        showScreen('achievementScreen'); 
-    }
-    
-    function openSettings() { 
-        showScreen('settingsScreen'); 
-    }
-    
-    function exitGame() { 
-        alert("Terima kasih sudah bermain! Sampai jumpa lagi."); 
-    }
-
-    function saveSettings() {
-        alert("Pengaturan berhasil disimpan!");
-    }
-
-    // Fungsi untuk membuat tombol level secara otomatis
-    function generateLevelButtons() {
         let container = document.getElementById('levelContainer');
-        container.innerHTML = ""; // Kosongkan dulu
+        container.innerHTML = ""; 
         
         for(let i = 1; i <= GAME.totalLevel; i++) {
             let btn = document.createElement('button');
             btn.innerText = "Level " + i;
-            // Jika level belum terbuka, buat tombol jadi disabled
+            
             if(i > GAME.maxLevelUnlocked) {
                 btn.disabled = true;
                 btn.innerText += " 🔒";
+            } else {
+                btn.onclick = function() {
+                    mulaiMainGame(i); // <-- INI YANG BIKIN LEVEL BISA DIMAINKAN
+                };
             }
             container.appendChild(btn);
         }
+    }
+
+    // Fungsi Saat Level Diklik
+    function mulaiMainGame(levelAngka) {
+        // Hilangkan semua menu
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+        // Munculkan Status Bar Game
+        document.getElementById('hud').style.display = 'block';
+        document.getElementById('pName').innerText = GAME.name;
+        
+        alert("Game Level " + levelAngka + " Dimulai!\n(Nanti karakter " + GAME.charIcons[GAME.charId] + " akan muncul di Canvas Phaser)");
+    }
+
+    // === GENERATE KARAKTER KETIKA KLIK CHARACTERS ===
+    function openCharacterSelect() { 
+        showScreen('charScreen'); 
+        let container = document.getElementById('charList');
+        container.innerHTML = ""; // Kosongkan dulu
+        
+        GAME.charIcons.forEach((icon, index) => {
+            let btn = document.createElement('button');
+            // Cek apakah karakter ini yang sedang dipakai
+            if (GAME.charId === index) {
+                btn.className = 'char-btn selected';
+            } else {
+                btn.className = 'char-btn';
+            }
+            
+            btn.innerHTML = `<div class="char-icon">${icon}</div>Char ${index+1}`;
+            
+            // Perintah saat diklik
+            btn.onclick = function() {
+                GAME.charId = index;
+                // Update tampilan tombol yang dipilih
+                document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+            };
+            
+            container.appendChild(btn);
+        });
+    }
+
+    // Menu lainnya
+    function openAchievements() { showScreen('achievementScreen'); }
+    function openSettings() { 
+        showScreen('settingsScreen'); 
+        // Mengisi input nama dengan nama saat ini
+        document.getElementById('setName').value = GAME.name;
+    }
+
+    // === LOGIKA MENYIMPAN SETTING ===
+    function saveSettings() {
+        let inputName = document.getElementById('setName').value;
+        let lang = document.getElementById('setLang').value;
+        let theme = document.getElementById('setTheme').value;
+        let bg = document.getElementById('setBg').value;
+
+        // 1. Simpan Nama
+        if(inputName !== "") {
+            GAME.name = inputName;
+        }
+
+        // 2. Terapkan Tampilan (Dark/Light)
+        if(theme === 'dark') {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+
+        // 3. Terapkan Background Lobby
+        let lobbyBg = document.getElementById('lobbyBg');
+        if(bg === 'blue') lobbyBg.style.background = 'linear-gradient(135deg, #1a2980, #26d0ce)';
+        if(bg === 'dark') lobbyBg.style.background = '#222';
+        if(bg === 'sunset') lobbyBg.style.background = 'linear-gradient(135deg, #ff7e5f, #feb47b)';
+        if(bg === 'space') lobbyBg.style.background = 'radial-gradient(circle, #020111 0%, #20124d 100%)';
+
+        // 4. Terapkan Bahasa Sederhana (Contoh)
+        if(lang === 'en') {
+            document.getElementById('menuTitle').innerText = "🏰 MAIN MENU";
+            document.getElementById('btnPlay').innerText = "🎮 PLAY GAME";
+            document.getElementById('btnChar').innerText = "👥 CHARACTERS";
+            document.getElementById('btnAchieve').innerText = "🎖️ ACHIEVEMENTS";
+            document.getElementById('btnSet').innerText = "⚙️ SETTINGS";
+            document.getElementById('lvlTitle').innerText = "🗺️ SELECT LEVEL";
+            document.getElementById('charTitle').innerText = "👥 SELECT CHARACTER";
+        } else {
+            document.getElementById('menuTitle').innerText = "🏰 MENU UTAMA";
+            document.getElementById('btnPlay').innerText = "🎮 PLAY GAME";
+            document.getElementById('btnChar').innerText = "👥 KARAKTER";
+            document.getElementById('btnAchieve').innerText = "🎖️ PENGHARGAAN";
+            document.getElementById('btnSet').innerText = "⚙️ PENGATURAN";
+            document.getElementById('lvlTitle').innerText = "🗺️ PILIH LEVEL";
+            document.getElementById('charTitle').innerText = "👥 PILIH KARAKTER";
+        }
+
+        alert("Pengaturan Berhasil Diterapkan!");
     }
 
     // === SISTEM LOADING SCREEN ===
@@ -355,22 +385,19 @@
         let loadingText = document.getElementById('loadingText');
         let progress = 0;
         
-        // Simulasi proses loading (bisa diubah nanti kalau digabung dengan load aset Phaser sungguhan)
         let loadingInterval = setInterval(() => {
-            progress += 5; // Naik 5% setiap interval
+            progress += 10;
             loadBar.style.width = progress + '%';
             loadingText.innerText = "Loading... " + progress + "%";
             
             if (progress >= 100) {
                 clearInterval(loadingInterval);
-                // Setelah selesai loading, pindah ke Lobby
                 setTimeout(() => {
                     showScreen('lobbyScreen');
-                }, 500); // Jeda setengah detik biar mulus
+                }, 300);
             }
-        }, 100); 
+        }, 50); 
     };
-
 </script>
 </body>
 </html>
