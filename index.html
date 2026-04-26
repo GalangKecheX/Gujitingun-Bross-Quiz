@@ -2,244 +2,209 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Adventure World</title>
+    <title>Super Adventure - Mega Update</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        /* Mengembalikan Background Biru Gradient sesuai image_577918.jpg */
-        body { 
-            margin: 0; padding: 0; overflow: hidden;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-            font-family: 'Arial', sans-serif;
-            display: flex; justify-content: center; align-items: center; min-height: 100vh;
-        }
-
-        #game-container { 
-            position: relative; width: 800px; height: 600px; 
-            border: 5px solid #fff; border-radius: 10px; overflow: hidden; background: #000;
-        }
-
-        /* UI Screens */
-        .screen {
-            position: absolute; width: 100%; height: 100%;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10; color: white;
-        }
+        :root { --primary-bg: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        body { margin: 0; padding: 0; overflow: hidden; background: var(--primary-bg); font-family: 'Arial', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        #game-container { position: relative; width: 800px; height: 600px; border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        .screen { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: white; text-align: center; }
         .active { display: flex; }
+        
+        /* Pengaturan sesuai image_577c81.png */
+        .settings-box { background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; width: 350px; }
+        .settings-row { margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
+        input, select { width: 80%; padding: 8px; margin-top: 5px; border-radius: 5px; border: none; }
+        
+        .menu-btn { background: #4CAF50; border: none; border-radius: 8px; color: white; padding: 10px 20px; margin: 5px; width: 250px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .menu-btn:hover { transform: scale(1.05); background: #45a049; }
 
-        /* Button Styling sesuai image_577918.jpg */
-        .menu-btn {
-            background: #4CAF50; border: none; border-radius: 8px; color: white;
-            padding: 12px 25px; margin: 8px; width: 300px; font-size: 18px;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .menu-btn:hover { background: #45a049; transform: scale(1.05); }
-        .menu-btn:disabled { background: #666; cursor: not-allowed; opacity: 0.7; }
-
-        /* Character Grid sesuai image_57083e.png */
-        .grid-view {
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
-            max-height: 350px; overflow-y: auto; padding: 20px; width: 90%;
-            background: rgba(0,0,0,0.5); border-radius: 10px;
-        }
-        .char-item {
-            background: #2196F3; border-radius: 10px; padding: 10px; text-align: center;
-            border: 2px solid transparent; cursor: pointer;
-        }
-        .char-item.locked { background: #444; opacity: 0.8; }
-        .char-item.selected { border-color: #FFEB3B; box-shadow: 0 0 10px #FFEB3B; }
-
-        /* HUD - Perbaikan posisi agar tidak hitam kosong (image_576cc3.png) */
-        #hud {
-            position: absolute; top: 15px; left: 15px; z-index: 100;
-            background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px;
-            display: none; color: white; border: 1px solid #555;
-        }
+        /* Quiz Overlay */
+        #quiz-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .quiz-card { background: #fff; color: #333; padding: 20px; border-radius: 15px; width: 400px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="hud">
-        ❤️ <span id="h-lives">3</span> | 💰 <span id="h-coins">0</span> | 👤 <span id="h-name">Hero</span>
-    </div>
-
     <div id="m-utama" class="screen active">
-        <h1 id="txt-title">🏰 MENU UTAMA</h1>
-        <button class="menu-btn" onclick="openScreen('m-level')">🎮 <span id="btn-play">PLAY GAME</span></button>
-        <button class="menu-btn" onclick="openScreen('m-char')">👥 <span id="btn-char">CHARACTERS (99)</span></button>
-        <button class="menu-btn" onclick="openScreen('m-lead')">🏆 <span id="btn-lead">LEADERBOARD</span></button>
-        <button class="menu-btn" onclick="openScreen('m-ach')">🏅 <span id="btn-ach">ACHIEVEMENTS</span></button>
-        <button class="menu-btn" onclick="openScreen('m-set')">⚙️ <span id="btn-set">SETTINGS</span></button>
-        <button class="menu-btn" onclick="window.close()">🚪 <span id="btn-exit">EXIT</span></button>
-    </div>
-
-    <div id="m-char" class="screen">
-        <h2 id="txt-char-title">👤 PILIH KARAKTER</h2>
-        <div class="grid-view" id="char-list"></div>
-        <button class="menu-btn" style="width:150px; background:#f44336;" onclick="openScreen('m-utama')">BACK</button>
-    </div>
-
-    <div id="m-level" class="screen">
-        <h2 id="txt-level-title">🗺️ PILIH LEVEL</h2>
-        <div class="grid-view" id="level-list"></div>
-        <button class="menu-btn" style="width:150px; background:#f44336;" onclick="openScreen('m-utama')">BACK</button>
+        <h1>🏰 MENU UTAMA</h1>
+        <button class="menu-btn" onclick="openScreen('m-level')">🎮 PLAY GAME</button>
+        <button class="menu-btn" onclick="openScreen('m-char')">👥 CHARACTERS (99)</button>
+        <button class="menu-btn" onclick="openScreen('m-lead')">🏆 LEADERBOARD</button>
+        <button class="menu-btn" onclick="openScreen('m-ach')">🏅 ACHIEVEMENTS</button>
+        <button class="menu-btn" onclick="openScreen('m-set')">⚙️ SETTINGS</button>
+        <button class="menu-btn" onclick="window.close()">🚪 EXIT</button>
     </div>
 
     <div id="m-set" class="screen">
-        <h2 id="txt-set-title">⚙️ SETTINGS</h2>
-        <label>Language:</label>
-        <select id="lang-select" onchange="applyLanguage()">
-            <option value="id">Bahasa Indonesia</option>
-            <option value="en">English (US)</option>
-        </select>
-        <button class="menu-btn" style="width:150px;" onclick="openScreen('m-utama')">SAVE & BACK</button>
+        <div class="settings-box">
+            <h2>⚙️ PENGATURAN</h2>
+            <div class="settings-row">
+                <label>Nama Player:</label>
+                <input type="text" id="p-name" value="Player">
+            </div>
+            <div class="settings-row">
+                <label>Volume Musik:</label>
+                <input type="range" min="0" max="100" id="p-vol">
+            </div>
+            <div class="settings-row">
+                <label>Bahasa:</label>
+                <select id="p-lang">
+                    <option value="id">🇮🇩 Indonesia</option>
+                    <option value="en">🇺🇸 English</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label>Tampilan:</label>
+                <select id="p-theme">
+                    <option value="dark">🌙 Dark Mode</option>
+                    <option value="light">☀️ Light Mode</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label>Background Lobby:</label>
+                <select id="p-bg">
+                    <option value="blue">🔵 Blue Gradient</option>
+                    <option value="space">🌌 Space (Bintang)</option>
+                </select>
+            </div>
+            <button class="menu-btn" style="background:#2196F3" onclick="saveSettings()">💾 SIMPAN</button>
+            <button class="menu-btn" style="background:#f44336" onclick="openScreen('m-utama')">⬅️ BACK</button>
+        </div>
+    </div>
+
+    <div id="m-level" class="screen"><h2>🗺️ PILIH LEVEL</h2><div id="lvl-grid"></div><button class="menu-btn" onclick="openScreen('m-utama')">BACK</button></div>
+    <div id="m-char" class="screen"><h2>👥 PILIH KARAKTER (99)</h2><div id="char-grid" style="display:grid; grid-template-columns: repeat(5,1fr); gap:5px; height:300px; overflow-y:auto;"></div><button class="menu-btn" onclick="openScreen('m-utama')">BACK</button></div>
+
+    <div id="quiz-overlay">
+        <div class="quiz-card">
+            <h3 id="q-category">📖 QUIZ MATEMATIKA</h3>
+            <p id="q-text">Berapakah 15 x 4?</p>
+            <input type="text" id="q-ans" placeholder="Jawaban kamu...">
+            <button class="menu-btn" onclick="checkQuiz()">KIRIM JAWABAN</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- DATA SISTEM ---
-    const GAME_DATA = {
-        coins: 1000,
-        unlockedLevels: 1,
-        selectedCharIdx: 0,
-        unlockedChars: [0], // Char 0 default terbuka
-        lang: 'id'
-    };
+    let GAME_DATA = { name: "Player", coins: 500, unlockedLvl: 1, unlockedChars: [0], selectedChar: 0 };
+    const characters = Array.from({length: 99}, (_, i) => ({ id: i, name: "Char "+(i+1), price: 100+(i*10), emoji: "👤" }));
 
-    // Generate 99 Karakter dengan Harga Varian & Syarat Quest
-    const characters = [];
-    const emojis = ["👦","👩","👨","👮","👷","🧙","🧛","🧝","🧚","🤖","👽","👾","👻","🎃","🐱"];
-    for(let i=0; i<99; i++) {
-        characters.push({
-            id: i,
-            name: "Char " + (i+1),
-            icon: emojis[i % emojis.length],
-            price: 100 + (i * 50), // Harga naik tiap karakter
-            questLvl: Math.floor(i / 4) + 1 // Harus selesaikan level tertentu
-        });
-    }
-
-    // --- UI LOGIC ---
     function openScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(id === 'm-char') renderCharacters();
-        if(id === 'm-level') renderLevels();
+        if(id === 'm-char') renderChars();
+        if(id === 'm-level') renderLvls();
     }
 
-    function renderCharacters() {
-        const list = document.getElementById('char-list');
-        list.innerHTML = "";
-        characters.forEach((c, index) => {
-            const isUnlocked = GAME_DATA.unlockedChars.includes(index);
-            const isQuestMet = GAME_DATA.unlockedLevels >= c.questLvl;
-            
-            const div = document.createElement('div');
-            div.className = `char-item ${!isUnlocked ? 'locked' : ''} ${GAME_DATA.selectedCharIdx === index ? 'selected' : ''}`;
-            
-            div.innerHTML = `
-                <div style="font-size:30px">${isUnlocked ? c.icon : '🔒'}</div>
-                <div style="font-size:12px">${c.name}</div>
-                <div style="font-size:10px">${isUnlocked ? 'OWNED' : '💰' + c.price}</div>
-                ${!isUnlocked ? `<div style="font-size:9px; color:#ffeb3b">Quest: Lvl ${c.questLvl}</div>` : ''}
-            `;
+    function saveSettings() {
+        const bg = document.getElementById('p-bg').value;
+        document.body.style.background = (bg === 'blue') ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : '#0a0a2a';
+        alert("Pengaturan Disimpan!");
+    }
 
+    function renderChars() {
+        const grid = document.getElementById('char-grid'); grid.innerHTML = "";
+        characters.forEach((c, i) => {
+            const isOwned = GAME_DATA.unlockedChars.includes(i);
+            const div = document.createElement('div');
+            div.style.padding = "10px"; div.style.background = isOwned ? "#4CAF50" : "#444";
+            div.innerHTML = `${c.emoji}<br><small>${isOwned ? 'READY' : '💰'+c.price}</small>`;
             div.onclick = () => {
-                if(isUnlocked) {
-                    GAME_DATA.selectedCharIdx = index;
-                    renderCharacters();
-                } else {
-                    if(!isQuestMet) {
-                        alert(`Selesaikan Level ${c.questLvl} dulu untuk membuka karakter ini!`);
-                    } else if(GAME_DATA.coins >= c.price) {
-                        if(confirm(`Beli ${c.name} seharga ${c.price} koin?`)) {
-                            GAME_DATA.coins -= c.price;
-                            GAME_DATA.unlockedChars.push(index);
-                            renderCharacters();
-                        }
-                    } else {
-                        alert("Koin tidak cukup!");
-                    }
+                if(!isOwned && GAME_DATA.coins >= c.price) {
+                    GAME_DATA.coins -= c.price; GAME_DATA.unlockedChars.push(i); renderChars();
+                } else if(isOwned) {
+                    GAME_DATA.selectedChar = i; alert("Karakter dipilih!");
                 }
             };
-            list.appendChild(div);
+            grid.appendChild(div);
         });
     }
 
-    function renderLevels() {
-        const list = document.getElementById('level-list');
-        list.innerHTML = "";
+    function renderLvls() {
+        const grid = document.getElementById('lvl-grid'); grid.innerHTML = "";
         for(let i=1; i<=25; i++) {
-            const isUnlocked = i <= GAME_DATA.unlockedLevels;
             const btn = document.createElement('button');
-            btn.className = 'char-item';
-            btn.style.width = '100%';
-            btn.style.background = isUnlocked ? '#4CAF50' : '#444';
-            btn.innerHTML = `Level ${i} ${isUnlocked ? '' : '🔒'}`;
-            btn.onclick = () => isUnlocked ? startGame(i) : alert("Level Terkunci!");
-            list.appendChild(btn);
+            btn.className = "menu-btn"; btn.style.width = "120px";
+            btn.innerText = `Level ${i} ${i > GAME_DATA.unlockedLvl ? '🔒' : ''}`;
+            btn.onclick = () => i <= GAME_DATA.unlockedLvl ? startPhaserGame(i) : alert("Terkunci!");
+            grid.appendChild(btn);
         }
     }
 
-    function applyLanguage() {
-        GAME_DATA.lang = document.getElementById('lang-select').value;
-        const isEn = GAME_DATA.lang === 'en';
-        
-        document.getElementById('txt-title').innerText = isEn ? "🏰 MAIN MENU" : "🏰 MENU UTAMA";
-        document.getElementById('btn-play').innerText = isEn ? "PLAY GAME" : "MULAI GAME";
-        document.getElementById('btn-char').innerText = isEn ? "CHARACTERS (99)" : "KARAKTER (99)";
-        document.getElementById('btn-set').innerText = isEn ? "SETTINGS" : "PENGATURAN";
-        document.getElementById('btn-exit').innerText = isEn ? "EXIT" : "KELUAR";
-        document.getElementById('txt-char-title').innerText = isEn ? "👤 SELECT CHARACTER" : "👤 PILIH KARAKTER";
-        document.getElementById('txt-level-title').innerText = isEn ? "🗺️ SELECT LEVEL" : "🗺️ PILIH LEVEL";
-    }
-
-    // --- GAME ENGINE (Solusi Layar Hitam) ---
+    // --- PHASER GAME ENGINE ---
     let game;
-    function startGame(lvl) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('hud').style.display = 'block';
-        document.getElementById('h-coins').innerText = GAME_DATA.coins;
-        document.getElementById('h-name').innerText = characters[GAME_DATA.selectedCharIdx].name;
-
-        if (game) game.destroy(true);
-
+    function startPhaserGame(lvl) {
+        openScreen('none');
+        if(game) game.destroy(true);
+        
         const config = {
-            type: Phaser.AUTO,
-            width: 800, height: 600,
-            parent: 'game-container',
-            physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
+            type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
             scene: {
                 preload: function() {
-                    // Pakai aset eksternal agar tidak hitam
-                    this.load.image('bg', 'https://labs.phaser.io/assets/skies/space3.png');
+                    this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
                     this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+                    this.load.image('door', 'https://labs.phaser.io/assets/sprites/cog.png');
                 },
                 create: function() {
-                    this.add.image(400, 300, 'bg');
+                    this.add.image(400, 300, 'sky');
                     let platforms = this.physics.add.staticGroup();
-                    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+                    platforms.create(400, 580, 'ground').setScale(2).refreshBody();
+                    platforms.create(600, 450, 'ground');
 
-                    // Karakter berupa Teks Emoji agar tidak butuh file gambar luar
-                    this.player = this.add.text(100, 450, characters[GAME_DATA.selectedCharIdx].icon, { fontSize: '64px' });
+                    this.player = this.add.text(100, 450, characters[GAME_DATA.selectedChar].emoji, { fontSize: '48px' });
                     this.physics.add.existing(this.player);
                     this.player.body.setCollideWorldBounds(true);
                     this.physics.add.collider(this.player, platforms);
 
-                    this.add.text(200, 200, `LEVEL ${lvl} STARTED`, { fontSize: '40px', fill: '#fff' });
-                    this.add.text(200, 250, "Tekan 'W' untuk Menang (Tes Unlock Level)", { fontSize: '20px', fill: '#0f0' });
-                    
-                    this.input.keyboard.on('keydown-W', () => {
-                        if(lvl === GAME_DATA.unlockedLevels) GAME_DATA.unlockedLevels++;
-                        alert("Level Selesai! Level Berikutnya Terbuka.");
-                        location.reload(); 
+                    this.door = this.physics.add.staticImage(750, 500, 'door');
+                    this.physics.add.overlap(this.player, this.door, () => {
+                        this.scene.pause();
+                        showQuiz();
                     });
+
+                    this.cursors = this.input.keyboard.createCursorKeys();
+                    this.add.text(10, 10, "Gunakan PANAH untuk jalan. Dekati pintu untuk Quiz!", { fill: '#0f0' });
+                },
+                update: function() {
+                    if (this.cursors.left.isDown) this.player.body.setVelocityX(-200);
+                    else if (this.cursors.right.isDown) this.player.body.setVelocityX(200);
+                    else this.player.body.setVelocityX(0);
+
+                    if (this.cursors.up.isDown && this.player.body.touching.down) this.player.body.setVelocityY(-500);
                 }
             }
         };
         game = new Phaser.Game(config);
+    }
+
+    const quizzes = [
+        { c: "MATEMATIKA", q: "12 x 12 = ?", a: "144" },
+        { c: "KIMIA", q: "Simbol kimia Air adalah?", a: "H2O" },
+        { c: "GEOGRAFI", q: "Ibu kota Indonesia?", a: "Jakarta" },
+        { c: "BIOLOGI", q: "Bagian sel yang menghasilkan energi?", a: "Mitokondria" }
+    ];
+    let currentQuiz;
+
+    function showQuiz() {
+        currentQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
+        document.getElementById('q-category').innerText = "📖 QUIZ " + currentQuiz.c;
+        document.getElementById('q-text').innerText = currentQuiz.q;
+        document.getElementById('quiz-overlay').style.display = 'flex';
+    }
+
+    function checkQuiz() {
+        const ans = document.getElementById('q-ans').value;
+        if(ans.toLowerCase() === currentQuiz.a.toLowerCase()) {
+            alert("BENAR! Boss muncul untuk dilawan!");
+            document.getElementById('quiz-overlay').style.display = 'none';
+            // Lanjut ke mekanisme Boss Fight
+        } else {
+            alert("SALAH! Coba lagi.");
+        }
     }
 </script>
 </body>
