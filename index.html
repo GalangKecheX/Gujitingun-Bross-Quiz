@@ -2,40 +2,96 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Super Adventure - Mega Update</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Adventure - Fixes</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        :root { --primary-bg: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        body { margin: 0; padding: 0; overflow: hidden; background: var(--primary-bg); font-family: 'Arial', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        /* Base Styling */
+        :root { --bg: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Arial', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.3s; }
+        
+        /* Container and Screens */
         #game-container { position: relative; width: 800px; height: 600px; border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        
-        .screen { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: white; text-align: center; }
+        .screen { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: white; text-align: center; background: rgba(0,0,0,0.8); }
         .active { display: flex; }
-        
-        /* Pengaturan sesuai image_577c81.png */
-        .settings-box { background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; width: 350px; }
-        .settings-row { margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
-        input, select { width: 80%; padding: 8px; margin-top: 5px; border-radius: 5px; border: none; }
-        
-        .menu-btn { background: #4CAF50; border: none; border-radius: 8px; color: white; padding: 10px 20px; margin: 5px; width: 250px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .menu-btn:hover { transform: scale(1.05); background: #45a049; }
 
-        /* Quiz Overlay */
-        #quiz-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .quiz-card { background: #fff; color: #333; padding: 20px; border-radius: 15px; width: 400px; }
+        /* General Button Styling */
+        .menu-btn { background: #4CAF50; border: none; border-radius: 8px; color: white; padding: 10px 20px; margin: 5px; width: 250px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .menu-btn:hover:not(:disabled) { transform: scale(1.05); background: #45a049; }
+        .menu-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.8; }
+
+        /* Level Menu Styling (Vertical List) */
+        #lvl-list-container { max-height: 400px; overflow-y: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .level-btn { background: #4CAF50; border: none; border-radius: 5px; color: white; padding: 12px; margin: 5px; width: 200px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .level-btn.locked { background: #555; cursor: not-allowed; }
+
+        /* Character Grid Styling */
+        #char-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; height: 350px; overflow-y: auto; padding: 10px; width: 90%; }
+        .char-card { background: #333; padding: 10px; border-radius: 8px; text-align: center; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+        .char-card.locked { opacity: 0.6; }
+        .char-card.selected { border-color: #ffcc00; background: #555; }
+        .char-emoji { font-size: 32px; }
+        .char-req { font-size: 10px; color: #ffeb3b; margin-top: 5px; }
+
+        /* Settings Box */
+        .settings-box { background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; width: 350px; border: 1px solid #444; }
+        .settings-row { margin: 10px 0; display: flex; flex-direction: column; align-items: center; }
+        .settings-row label { font-size: 14px; margin-bottom: 5px; }
+        input[type="text"], select { width: 80%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; color: black; }
+        input[type="range"] { width: 80%; }
+
+        /* Placeholder Screens (Leaderboard/Achievements) */
+        .placeholder-box { background: #222; padding: 30px; border-radius: 10px; width: 60%; border: 2px dashed #666; }
+
+        /* Header UI (Coins, etc.) */
+        .header-bar { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; font-weight: bold; font-size: 18px; z-index: 20; text-shadow: 1px 1px 2px black; pointer-events: none;}
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    
+    <div class="header-bar" id="ui-header" style="display:none;">
+        <div>💰 <span id="ui-coins">0</span></div>
+        <div>🌟 <span id="ui-stars">0</span></div>
+    </div>
+
     <div id="m-utama" class="screen active">
-        <h1>🏰 MENU UTAMA</h1>
-        <button class="menu-btn" onclick="openScreen('m-level')">🎮 PLAY GAME</button>
-        <button class="menu-btn" onclick="openScreen('m-char')">👥 CHARACTERS (99)</button>
-        <button class="menu-btn" onclick="openScreen('m-lead')">🏆 LEADERBOARD</button>
-        <button class="menu-btn" onclick="openScreen('m-ach')">🏅 ACHIEVEMENTS</button>
-        <button class="menu-btn" onclick="openScreen('m-set')">⚙️ SETTINGS</button>
-        <button class="menu-btn" onclick="window.close()">🚪 EXIT</button>
+        <h1 id="t-title">🏰 MENU UTAMA</h1>
+        <button class="menu-btn" onclick="openScreen('m-level')">🎮 <span class="t-play">PLAY GAME</span></button>
+        <button class="menu-btn" onclick="openScreen('m-char')">👥 <span class="t-char">CHARACTERS (99)</span></button>
+        <button class="menu-btn" onclick="openScreen('m-lead')">🏆 <span class="t-lead">LEADERBOARD</span></button>
+        <button class="menu-btn" onclick="openScreen('m-ach')">🏅 <span class="t-ach">ACHIEVEMENTS</span></button>
+        <button class="menu-btn" onclick="openScreen('m-set')">⚙️ <span class="t-set">SETTINGS</span></button>
+        <button class="menu-btn" onclick="window.close()">🚪 <span class="t-exit">EXIT</span></button>
+    </div>
+
+    <div id="m-level" class="screen">
+        <div id="lvl-list-container"></div>
+        <button class="menu-btn" style="background:#f44336; margin-top:20px;" onclick="openScreen('m-utama')">⬅️ BACK</button>
+    </div>
+
+    <div id="m-char" class="screen">
+        <h2>👥 <span class="t-char-title">PILIH KARAKTER</span></h2>
+        <div style="margin-bottom: 10px;">💰 Koin: <span id="c-coins">0</span></div>
+        <div id="char-grid"></div>
+        <button class="menu-btn" style="background:#f44336; margin-top:10px;" onclick="openScreen('m-utama')">⬅️ BACK</button>
+    </div>
+
+    <div id="m-lead" class="screen">
+        <div class="placeholder-box">
+            <h2>🏆 LEADERBOARD</h2>
+            <p>Fitur ini akan segera hadir!</p>
+        </div>
+        <button class="menu-btn" style="background:#f44336; margin-top:20px;" onclick="openScreen('m-utama')">⬅️ BACK</button>
+    </div>
+
+    <div id="m-ach" class="screen">
+        <div class="placeholder-box">
+            <h2>🏅 ACHIEVEMENTS</h2>
+            <p>Selesaikan quest untuk mendapatkan achievement!</p>
+        </div>
+        <button class="menu-btn" style="background:#f44336; margin-top:20px;" onclick="openScreen('m-utama')">⬅️ BACK</button>
     </div>
 
     <div id="m-set" class="screen">
@@ -43,29 +99,29 @@
             <h2>⚙️ PENGATURAN</h2>
             <div class="settings-row">
                 <label>Nama Player:</label>
-                <input type="text" id="p-name" value="Player">
+                <input type="text" id="s-name" value="Player">
             </div>
             <div class="settings-row">
                 <label>Volume Musik:</label>
-                <input type="range" min="0" max="100" id="p-vol">
+                <input type="range" id="s-vol" min="0" max="100" value="50">
             </div>
             <div class="settings-row">
                 <label>Bahasa:</label>
-                <select id="p-lang">
+                <select id="s-lang">
                     <option value="id">🇮🇩 Indonesia</option>
                     <option value="en">🇺🇸 English</option>
                 </select>
             </div>
             <div class="settings-row">
                 <label>Tampilan:</label>
-                <select id="p-theme">
-                    <option value="dark">🌙 Dark Mode</option>
+                <select id="s-theme">
                     <option value="light">☀️ Light Mode</option>
+                    <option value="dark">🌙 Dark Mode</option>
                 </select>
             </div>
             <div class="settings-row">
                 <label>Background Lobby:</label>
-                <select id="p-bg">
+                <select id="s-bg">
                     <option value="blue">🔵 Blue Gradient</option>
                     <option value="space">🌌 Space (Bintang)</option>
                 </select>
@@ -75,137 +131,251 @@
         </div>
     </div>
 
-    <div id="m-level" class="screen"><h2>🗺️ PILIH LEVEL</h2><div id="lvl-grid"></div><button class="menu-btn" onclick="openScreen('m-utama')">BACK</button></div>
-    <div id="m-char" class="screen"><h2>👥 PILIH KARAKTER (99)</h2><div id="char-grid" style="display:grid; grid-template-columns: repeat(5,1fr); gap:5px; height:300px; overflow-y:auto;"></div><button class="menu-btn" onclick="openScreen('m-utama')">BACK</button></div>
-
-    <div id="quiz-overlay">
-        <div class="quiz-card">
-            <h3 id="q-category">📖 QUIZ MATEMATIKA</h3>
-            <p id="q-text">Berapakah 15 x 4?</p>
-            <input type="text" id="q-ans" placeholder="Jawaban kamu...">
-            <button class="menu-btn" onclick="checkQuiz()">KIRIM JAWABAN</button>
+    <div id="quiz-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center; color:white;">
+        <div style="background:#fff; color:#000; padding:20px; border-radius:10px; width:400px; text-align:center;">
+            <h3 id="q-cat">Kategori</h3>
+            <p id="q-text">Pertanyaan</p>
+            <input type="text" id="q-ans" style="width:90%; padding:10px; margin-bottom:10px;">
+            <button class="menu-btn" onclick="checkAnswer()">JAWAB</button>
         </div>
     </div>
 </div>
 
 <script>
-    let GAME_DATA = { name: "Player", coins: 500, unlockedLvl: 1, unlockedChars: [0], selectedChar: 0 };
-    const characters = Array.from({length: 99}, (_, i) => ({ id: i, name: "Char "+(i+1), price: 100+(i*10), emoji: "👤" }));
+    // --- DATA STATE ---
+    let GAME_DATA = {
+        coins: 1500, // Starting coins
+        maxLevel: 1, // Only Level 1 unlocked
+        unlockedChars: [0], // Only first char unlocked
+        selectedChar: 0,
+        lang: 'id',
+        theme: 'light',
+        bg: 'blue',
+        achievements: 0 // Placeholder for quest progress
+    };
 
-    function openScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'm-char') renderChars();
-        if(id === 'm-level') renderLvls();
-    }
+    // Dictionary for Language
+    const LANG = {
+        id: { title: "🏰 MENU UTAMA", play: "PLAY GAME", char: "CHARACTERS (99)", lead: "LEADERBOARD", ach: "ACHIEVEMENTS", set: "SETTINGS", exit: "EXIT", cTitle: "PILIH KARAKTER" },
+        en: { title: "🏰 MAIN MENU", play: "START GAME", char: "CHARACTERS (99)", lead: "LEADERBOARD", ach: "ACHIEVEMENTS", set: "SETTINGS", exit: "EXIT", cTitle: "SELECT CHARACTER" }
+    };
 
-    function saveSettings() {
-        const bg = document.getElementById('p-bg').value;
-        document.body.style.background = (bg === 'blue') ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : '#0a0a2a';
-        alert("Pengaturan Disimpan!");
-    }
+    // Generate 99 Characters (Mixed Unlocking Methods)
+    const emojis = ["👦","🥷","🧙","🧛","🧚","🤖","👽","👻","🦁","🦊"];
+    const chars = [];
+    for(let i=0; i<99; i++) {
+        let unlockType = (i % 3 === 0 && i !== 0) ? 'quest' : 'buy'; // Every 3rd char is quest-based
+        let reqValue = unlockType === 'buy' ? 100 + (i*20) : Math.floor(i/3) + 1; // Price or Quest Level required
 
-    function renderChars() {
-        const grid = document.getElementById('char-grid'); grid.innerHTML = "";
-        characters.forEach((c, i) => {
-            const isOwned = GAME_DATA.unlockedChars.includes(i);
-            const div = document.createElement('div');
-            div.style.padding = "10px"; div.style.background = isOwned ? "#4CAF50" : "#444";
-            div.innerHTML = `${c.emoji}<br><small>${isOwned ? 'READY' : '💰'+c.price}</small>`;
-            div.onclick = () => {
-                if(!isOwned && GAME_DATA.coins >= c.price) {
-                    GAME_DATA.coins -= c.price; GAME_DATA.unlockedChars.push(i); renderChars();
-                } else if(isOwned) {
-                    GAME_DATA.selectedChar = i; alert("Karakter dipilih!");
-                }
-            };
-            grid.appendChild(div);
+        chars.push({
+            id: i,
+            emoji: emojis[i % emojis.length],
+            type: unlockType,
+            req: reqValue
         });
     }
 
-    function renderLvls() {
-        const grid = document.getElementById('lvl-grid'); grid.innerHTML = "";
+    // --- UI FUNCTIONS ---
+    function openScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('ui-header').style.display = (id === 'm-utama') ? 'flex' : 'none';
+        
+        updateHeader();
+        if(id === 'm-level') renderLevels();
+        if(id === 'm-char') renderChars();
+    }
+
+    function updateHeader() {
+        document.getElementById('ui-coins').innerText = GAME_DATA.coins;
+        document.getElementById('c-coins').innerText = GAME_DATA.coins;
+    }
+
+    function saveSettings() {
+        // Save Language
+        GAME_DATA.lang = document.getElementById('s-lang').value;
+        const l = LANG[GAME_DATA.lang];
+        document.getElementById('t-title').innerText = l.title;
+        document.querySelectorAll('.t-play').forEach(e => e.innerText = l.play);
+        document.querySelectorAll('.t-char').forEach(e => e.innerText = l.char);
+        document.querySelectorAll('.t-lead').forEach(e => e.innerText = l.lead);
+        document.querySelectorAll('.t-ach').forEach(e => e.innerText = l.ach);
+        document.querySelectorAll('.t-set').forEach(e => e.innerText = l.set);
+        document.querySelectorAll('.t-exit').forEach(e => e.innerText = l.exit);
+        document.querySelectorAll('.t-char-title').forEach(e => e.innerText = l.cTitle);
+
+        // Save Background
+        GAME_DATA.bg = document.getElementById('s-bg').value;
+        document.body.style.background = (GAME_DATA.bg === 'blue') ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : '#050515';
+
+        // Save Theme
+        GAME_DATA.theme = document.getElementById('s-theme').value;
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.background = (GAME_DATA.theme === 'dark') ? 'rgba(0,0,0,0.95)' : 'rgba(0,0,0,0.8)';
+        });
+
+        alert("Pengaturan Disimpan!");
+    }
+
+    // Fixed Level Rendering (Vertical List, Lock Logic)
+    function renderLevels() {
+        const list = document.getElementById('lvl-list-container');
+        list.innerHTML = "";
         for(let i=1; i<=25; i++) {
+            const isUnlocked = i <= GAME_DATA.maxLevel;
             const btn = document.createElement('button');
-            btn.className = "menu-btn"; btn.style.width = "120px";
-            btn.innerText = `Level ${i} ${i > GAME_DATA.unlockedLvl ? '🔒' : ''}`;
-            btn.onclick = () => i <= GAME_DATA.unlockedLvl ? startPhaserGame(i) : alert("Terkunci!");
-            grid.appendChild(btn);
+            btn.className = `level-btn ${!isUnlocked ? 'locked' : ''}`;
+            btn.innerHTML = `Level ${i} ${isUnlocked ? '🔓' : '🔒'}`;
+            btn.onclick = () => {
+                if(isUnlocked) startPhaser(i);
+                else alert("Selesaikan level sebelumnya dulu!");
+            };
+            list.appendChild(btn);
         }
     }
 
-    // --- PHASER GAME ENGINE ---
+    // Fixed Character Rendering (Quests & Buying)
+    function renderChars() {
+        const grid = document.getElementById('char-grid');
+        grid.innerHTML = "";
+        
+        chars.forEach(c => {
+            const isOwned = GAME_DATA.unlockedChars.includes(c.id);
+            const isSelected = GAME_DATA.selectedChar === c.id;
+            
+            const card = document.createElement('div');
+            card.className = `char-card ${!isOwned ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
+            
+            let reqText = "OWNED";
+            if (!isOwned) {
+                reqText = c.type === 'buy' ? `💰 ${c.req}` : `Quest: Lvl ${c.req}`;
+            }
+
+            card.innerHTML = `
+                <span class="char-emoji">${c.emoji}</span>
+                <span class="char-req">${reqText}</span>
+            `;
+
+            card.onclick = () => handleCharClick(c, isOwned);
+            grid.appendChild(card);
+        });
+    }
+
+    function handleCharClick(c, isOwned) {
+        if(isOwned) {
+            GAME_DATA.selectedChar = c.id;
+            renderChars();
+            return;
+        }
+
+        if(c.type === 'buy') {
+            if(GAME_DATA.coins >= c.req) {
+                if(confirm(`Beli karakter seharga ${c.req} koin?`)) {
+                    GAME_DATA.coins -= c.req;
+                    GAME_DATA.unlockedChars.push(c.id);
+                    updateHeader();
+                    renderChars();
+                }
+            } else {
+                alert("Koin tidak cukup!");
+            }
+        } else if (c.type === 'quest') {
+            if(GAME_DATA.maxLevel > c.req) {
+                alert("Quest selesai! Karakter didapatkan.");
+                GAME_DATA.unlockedChars.push(c.id);
+                renderChars();
+            } else {
+                alert(`Selesaikan Level ${c.req} untuk membuka karakter ini!`);
+            }
+        }
+    }
+
+    // --- GAMEPLAY (PHASER & QUIZ) ---
     let game;
-    function startPhaserGame(lvl) {
+    let currentLvl = 1;
+
+    function startPhaser(lvl) {
+        currentLvl = lvl;
         openScreen('none');
         if(game) game.destroy(true);
-        
+
         const config = {
             type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container',
-            physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
+            physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
             scene: {
                 preload: function() {
                     this.load.image('sky', 'https://labs.phaser.io/assets/skies/space3.png');
                     this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
-                    this.load.image('door', 'https://labs.phaser.io/assets/sprites/cog.png');
+                    this.load.image('door', 'https://labs.phaser.io/assets/sprites/door.png');
                 },
                 create: function() {
                     this.add.image(400, 300, 'sky');
                     let platforms = this.physics.add.staticGroup();
-                    platforms.create(400, 580, 'ground').setScale(2).refreshBody();
-                    platforms.create(600, 450, 'ground');
+                    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
 
-                    this.player = this.add.text(100, 450, characters[GAME_DATA.selectedChar].emoji, { fontSize: '48px' });
+                    // Player setup
+                    this.player = this.add.text(50, 450, chars[GAME_DATA.selectedChar].emoji, {fontSize: '50px'});
                     this.physics.add.existing(this.player);
                     this.player.body.setCollideWorldBounds(true);
                     this.physics.add.collider(this.player, platforms);
 
-                    this.door = this.physics.add.staticImage(750, 500, 'door');
+                    // Door setup (Boss trigger)
+                    this.door = this.physics.add.staticImage(700, 480, 'door').setScale(0.5).refreshBody();
                     this.physics.add.overlap(this.player, this.door, () => {
                         this.scene.pause();
-                        showQuiz();
+                        triggerQuiz();
                     });
 
+                    // Instructions
+                    this.add.text(10, 10, "Panah Kiri/Kanan: Jalan\nPanah Atas: Lompat\nSentuh Pintu untuk lawan Boss!", {fill:'#fff'});
                     this.cursors = this.input.keyboard.createCursorKeys();
-                    this.add.text(10, 10, "Gunakan PANAH untuk jalan. Dekati pintu untuk Quiz!", { fill: '#0f0' });
                 },
                 update: function() {
                     if (this.cursors.left.isDown) this.player.body.setVelocityX(-200);
                     else if (this.cursors.right.isDown) this.player.body.setVelocityX(200);
                     else this.player.body.setVelocityX(0);
 
-                    if (this.cursors.up.isDown && this.player.body.touching.down) this.player.body.setVelocityY(-500);
+                    if (this.cursors.up.isDown && this.player.body.touching.down) this.player.body.setVelocityY(-450);
                 }
             }
         };
         game = new Phaser.Game(config);
     }
 
-    const quizzes = [
-        { c: "MATEMATIKA", q: "12 x 12 = ?", a: "144" },
-        { c: "KIMIA", q: "Simbol kimia Air adalah?", a: "H2O" },
-        { c: "GEOGRAFI", q: "Ibu kota Indonesia?", a: "Jakarta" },
-        { c: "BIOLOGI", q: "Bagian sel yang menghasilkan energi?", a: "Mitokondria" }
+    // --- QUIZ SYSTEM ---
+    const quizData = [
+        { c: "Matematika", q: "Akar kuadrat dari 81?", a: "9" },
+        { c: "Geografi", q: "Ibu kota Jepang?", a: "Tokyo" },
+        { c: "Biologi", q: "Pusat tata surya kita?", a: "Matahari" },
+        { c: "Sejarah", q: "Tahun kemerdekaan RI?", a: "1945" }
     ];
-    let currentQuiz;
+    let activeQuiz;
 
-    function showQuiz() {
-        currentQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
-        document.getElementById('q-category').innerText = "📖 QUIZ " + currentQuiz.c;
-        document.getElementById('q-text').innerText = currentQuiz.q;
+    function triggerQuiz() {
+        activeQuiz = quizData[Math.floor(Math.random() * quizData.length)];
+        document.getElementById('q-cat').innerText = `Quiz ${activeQuiz.c}`;
+        document.getElementById('q-text').innerText = activeQuiz.q;
+        document.getElementById('q-ans').value = "";
         document.getElementById('quiz-overlay').style.display = 'flex';
     }
 
-    function checkQuiz() {
-        const ans = document.getElementById('q-ans').value;
-        if(ans.toLowerCase() === currentQuiz.a.toLowerCase()) {
-            alert("BENAR! Boss muncul untuk dilawan!");
+    function checkAnswer() {
+        const ans = document.getElementById('q-ans').value.toLowerCase().trim();
+        if(ans === activeQuiz.a.toLowerCase()) {
+            alert("BENAR! Boss dikalahkan!");
             document.getElementById('quiz-overlay').style.display = 'none';
-            // Lanjut ke mekanisme Boss Fight
+            if(currentLvl === GAME_DATA.maxLevel) {
+                GAME_DATA.maxLevel++; // Unlock next level
+            }
+            openScreen('m-level'); // Return to level menu
         } else {
             alert("SALAH! Coba lagi.");
         }
     }
+
+    // Init
+    updateHeader();
 </script>
+
 </body>
 </html>
