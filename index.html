@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Adventure World</title>
+    <title>Super Adventure World - Pro Update</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        /* Background Biru Gradient sesuai image_efbf3b.png */
-        :root { --bg-blue: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        /* Variabel Background */
+        :root { 
+            --bg-current: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+        }
+        
         body { 
             margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif;
-            background: var(--bg-blue); display: flex; justify-content: center; align-items: center; min-height: 100vh; 
+            background: var(--bg-current); display: flex; justify-content: center; align-items: center; min-height: 100vh; 
+            transition: background 0.5s ease;
         }
         
         #game-container { position: relative; width: 800px; height: 600px; border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #000; }
@@ -31,6 +35,10 @@
         .row { margin: 15px 0; text-align: left; width: 100%; }
         .row label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, select { width: 100%; padding: 10px; border-radius: 5px; border: none; font-size: 14px; }
+
+        /* Achievement Style sesuai image_efb724.png */
+        .ach-list { text-align: left; width: 80%; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; }
+        .ach-item { margin: 10px 0; font-size: 18px; }
 
         /* Grid Level & Char */
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 20px; max-height: 350px; overflow-y: auto; width: 90%; }
@@ -84,6 +92,9 @@
                 <label id="l-lobby">Background Lobby:</label>
                 <select id="in-bg">
                     <option value="blue">🔵 Blue</option>
+                    <option value="dark">⚫ Dark</option>
+                    <option value="sunset">🌅 Sunset</option>
+                    <option value="green">🟢 Green</option>
                     <option value="space">🌌 Space</option>
                 </select>
             </div>
@@ -92,6 +103,18 @@
                 <button class="menu-btn" style="background:#f44336" onclick="go('m-utama')">⬅️ BACK</button>
             </div>
         </div>
+    </div>
+
+    <div id="m-ach" class="screen">
+        <h2 id="t-ach-title">🏅 ACHIEVEMENTS</h2>
+        <div class="ach-list">
+            <div class="ach-item">⬜ Master Ice World</div>
+            <div class="ach-item">⬜ Beat the Boss</div>
+            <div class="ach-item">⬜ Collect 1000 Coins</div>
+            <div class="ach-item">⬜ Complete All Quiz</div>
+            <div class="ach-item">⬜ Unlock All Characters</div>
+        </div>
+        <button class="menu-btn" style="background:#f44336; margin-top: 20px; width: 150px;" onclick="go('m-utama')">BACK</button>
     </div>
 
     <div id="m-level" class="screen">
@@ -107,8 +130,7 @@
         <button class="menu-btn" style="background:#f44336; width: 150px;" onclick="go('m-utama')">BACK</button>
     </div>
 
-    <div id="m-lead" class="screen"><h2>🏆 LEADERBOARD</h2><p>Top Players: <br>1. Player1 - 5000<br>2. Player2 - 4500</p><button class="menu-btn" onclick="go('m-utama')">BACK</button></div>
-    <div id="m-ach" class="screen"><h2>🏅 ACHIEVEMENTS</h2><p>Quest 1: Selesaikan Level 5 🔒<br>Quest 2: Kumpulkan 1000 Koin ✅</p><button class="menu-btn" onclick="go('m-utama')">BACK</button></div>
+    <div id="m-lead" class="screen"><h2>🏆 LEADERBOARD</h2><p>1. Player1 - 5000<br>2. Player2 - 4500</p><button class="menu-btn" onclick="go('m-utama')">BACK</button></div>
 
     <div id="quiz-box">
         <div class="settings-box" style="text-align:center">
@@ -121,7 +143,6 @@
 </div>
 
 <script>
-    // --- DATA ---
     const GAME = {
         coins: 1200,
         unlockedLvl: 1,
@@ -137,17 +158,24 @@
             id: i,
             name: "Char " + (i+1),
             price: 100 + (i * 20),
-            quest: i % 5 === 0 ? Math.floor(i/5) + 1 : 0, // Ada yang syaratnya level
+            quest: i % 5 === 0 ? Math.floor(i/5) + 1 : 0,
             emoji: ["👦","🧙","🧛","🧝","🤖","🦊","👽"][i % 7]
         });
     }
 
     const TEXTS = {
-        id: { menu:"MENU UTAMA", play:"PLAY GAME", char:"KARAKTER (99)", set:"PENGATURAN", exit:"KELUAR", lvlT:"PILIH LEVEL", chrT:"PILIH KARAKTER" },
-        en: { menu:"MAIN MENU", play:"START GAME", char:"CHARACTERS (99)", set:"SETTINGS", exit:"EXIT", lvlT:"SELECT LEVEL", chrT:"SELECT CHARACTER" }
+        id: { menu:"MENU UTAMA", play:"PLAY GAME", char:"KARAKTER (99)", set:"PENGATURAN", exit:"KELUAR", lvlT:"PILIH LEVEL", chrT:"PILIH KARAKTER", achT:"PENCAPAIAN" },
+        en: { menu:"MAIN MENU", play:"START GAME", char:"CHARACTERS (99)", set:"SETTINGS", exit:"EXIT", lvlT:"SELECT LEVEL", chrT:"SELECT CHARACTER", achT:"ACHIEVEMENTS" }
     };
 
-    // --- LOGIC ---
+    const BG_STYLES = {
+        blue: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+        dark: "#1a1a1a",
+        sunset: "linear-gradient(180deg, #ff5e62 0%, #ff9966 100%)",
+        green: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+        space: "radial-gradient(circle, #203a43, #2c5364, #0f2027)"
+    };
+
     function go(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -159,16 +187,15 @@
         GAME.lang = document.getElementById('in-lang').value;
         const t = TEXTS[GAME.lang];
         
-        // Update Teks
         document.getElementById('t-menu').innerText = t.menu;
         document.getElementById('btn-play').innerText = t.play;
         document.getElementById('btn-char').innerText = t.char;
         document.getElementById('t-lvl-title').innerText = t.lvlT;
         document.getElementById('t-char-title').innerText = t.chrT;
+        document.getElementById('t-ach-title').innerText = t.achT;
 
-        // Update Theme & BG
-        const bg = document.getElementById('in-bg').value;
-        document.body.style.background = (bg === 'space') ? '#050515' : 'var(--bg-blue)';
+        const bgKey = document.getElementById('in-bg').value;
+        document.body.style.background = BG_STYLES[bgKey];
         
         alert(GAME.lang === 'id' ? "Tersimpan!" : "Saved!");
         go('m-utama');
@@ -199,7 +226,7 @@
                 else if(c.quest > 0 && GAME.unlockedLvl < c.quest) { alert("Selesaikan Level "+c.quest+"!"); }
                 else if(GAME.coins >= c.price) {
                     if(confirm("Beli karakter ini?")) {
-                        GAME.coins -= c.price; GAME.unlockedChars.push(i); renderChars();
+                        GAME.coins -= c.price; GAME_DATA.unlockedChars.push(i); renderChars();
                     }
                 } else { alert("Koin tidak cukup!"); }
             };
@@ -207,7 +234,6 @@
         });
     }
 
-    // --- GAME ENGINE ---
     let phaserGame;
     function startWorld(lvl) {
         go('none');
@@ -225,15 +251,12 @@
                     this.add.image(400, 300, 'sky');
                     let g = this.physics.add.staticGroup();
                     g.create(400, 580, 'plt').setScale(2).refreshBody();
-
                     this.p = this.add.text(100, 450, GAME.chars[GAME.selectedChar].emoji, {fontSize: '50px'});
                     this.physics.add.existing(this.p);
                     this.p.body.setCollideWorldBounds(true);
                     this.physics.add.collider(this.p, g);
-
                     this.door = this.physics.add.staticImage(700, 500, 'door').setScale(0.5).refreshBody();
                     this.physics.add.overlap(this.p, this.door, () => { this.scene.pause(); showQuiz(lvl); });
-
                     this.keys = this.input.keyboard.createCursorKeys();
                 },
                 update: function() {
@@ -250,11 +273,9 @@
     const quizzes = [
         { c:"KIMIA", q:"Apa rumus kimia air?", a:"H2O" },
         { c:"MATEMATIKA", q:"100 : 4 = ?", a:"25" },
-        { c:"GEOGRAFI", q:"Ibu kota Indonesia?", a:"Jakarta" },
-        { c:"BIOLOGI", q:"Makhluk hidup bernapas menghirup?", a:"Oksigen" }
+        { c:"GEOGRAFI", q:"Ibu kota Indonesia?", a:"Jakarta" }
     ];
-    let activeQuiz;
-    let activeLvl;
+    let activeQuiz, activeLvl;
 
     function showQuiz(lvl) {
         activeLvl = lvl;
@@ -267,11 +288,11 @@
     function checkQuiz() {
         const val = document.getElementById('q-ans').value;
         if(val.toLowerCase() === activeQuiz.a.toLowerCase()) {
-            alert("BENAR! Boss dikalahkan!");
+            alert("BENAR!");
             if(activeLvl === GAME.unlockedLvl) GAME.unlockedLvl++;
             location.reload(); 
         } else {
-            alert("SALAH! Coba lagi.");
+            alert("SALAH!");
         }
     }
 </script>
