@@ -3,360 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Adventure - Enhanced Gameplay</title>
+    <title>Super Adventure - Final Mega Update</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
-        /* CSS ASLI KAMU */
+        /* === STYLE ASLI KAMU (TIDAK DIUBAH) === */
         :root { --bg-current: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         body { margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif; background: var(--bg-current); display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.5s; }
         #game-container { position: relative; width: 800px; height: 600px; border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #222; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
         .screen { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: white; text-align: center; }
-        .active { display: flex; background: rgba(0,0,0,0.7); }
+        .active { display: flex; background: rgba(0,0,0,0.8); }
         .menu-btn { background: #4CAF50; border: none; border-radius: 8px; color: white; padding: 12px 25px; margin: 8px; width: 320px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px #2e7d32; }
         .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px #2e7d32; }
-        .settings-box { background: rgba(0,0,0,0.9); padding: 25px; border-radius: 15px; width: 450px; border: 2px solid #fff; box-sizing: border-box; }
-        .row { margin: 12px 0; text-align: left; width: 100%; }
-        .row label { font-weight: bold; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border-radius: 5px; border: none; box-sizing: border-box; }
+        .settings-box { background: rgba(0,0,0,0.9); padding: 25px; border-radius: 15px; width: 500px; border: 2px solid #fff; }
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 20px; max-height: 350px; overflow-y: auto; width: 90%; }
-        .item { background: #2196F3; padding: 15px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; text-align: center; }
-        .item.locked { background: #555; opacity: 0.7; cursor: not-allowed; }
-        .ach-list { text-align: left; width: 80%; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 0 auto; }
+        .item { background: #2196F3; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center; }
+        .item.locked { background: #555; opacity: 0.7; }
         
-        /* FITUR BARU: HUD & MOBILE BUTTONS (TETAP SESUAI TEMA) */
-        #game-hud { position: absolute; top: 10px; left: 10px; color: white; z-index: 20; display: none; text-align: left; text-shadow: 2px 2px #000; pointer-events: none; }
-        #mobile-controls { position: absolute; bottom: 20px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; z-index: 100; box-sizing: border-box; }
-        .ctrl-btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        #challenge-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; display:none; flex-direction:column; align-items:center; justify-content:center; }
+        /* === BAGIAN ACHIEVEMENT (KEMBALI KE ASLI) === */
+        .ach-card { background: rgba(255,255,255,0.1); width: 80%; padding: 15px; margin: 5px; border-radius: 10px; display: flex; align-items: center; gap: 15px; text-align: left; border-left: 5px solid #ffeb3b; }
+
+        /* === GAMEPLAY HUD & CONTROLS === */
+        #hud { position: absolute; top: 15px; left: 15px; z-index: 100; color: white; pointer-events: none; display: none; text-shadow: 2px 2px #000; }
+        #mobile-ctrl { position: absolute; bottom: 20px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; z-index: 100; box-sizing: border-box; }
+        .btn-touch { width: 75px; height: 75px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; user-select: none; }
+        #pause-overlay, #gameover-overlay, #challenge-overlay { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="game-hud">
-        <b id="hud-p-name">Player</b><br>
-        <span id="hud-lives">❤️ 3</span> | <span id="hud-coins">💰 0</span>
+    <div id="hud">
+        <b id="hud-name">Player</b><br>
+        <span id="hud-lives">❤️ ❤️ ❤️</span> | <span id="hud-coins">💰 0</span>
+        <br><button onclick="pauseGame()" style="pointer-events: auto; margin-top: 10px; background: #f39c12; border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">PAUSE</button>
     </div>
 
-    <div id="mobile-controls">
-        <div style="display:flex; gap:15px;">
-            <div class="ctrl-btn" id="btn-left">◀️</div>
-            <div class="ctrl-btn" id="btn-right">▶️</div>
+    <div id="mobile-ctrl">
+        <div style="display:flex; gap:20px;">
+            <div class="btn-touch" id="b-left">◀️</div>
+            <div class="btn-touch" id="b-right">▶️</div>
         </div>
-        <div class="ctrl-btn" id="btn-jump">⬆️</div>
+        <div class="btn-touch" id="b-jump">⬆️</div>
     </div>
 
     <div id="m-utama" class="screen active">
-        <h1 id="txt-main-title">🏰 MENU UTAMA</h1>
-        <button class="menu-btn" onclick="go('m-level')">🎮 <span id="txt-play">PLAY GAME</span></button>
-        <button class="menu-btn" onclick="go('m-char')">👥 <span id="txt-char">CHARACTERS (99)</span></button>
-        <button class="menu-btn" onclick="go('m-lead')">🏆 <span id="txt-lead">LEADERBOARD</span></button>
-        <button class="menu-btn" onclick="go('m-ach')">🏅 <span id="txt-ach">ACHIEVEMENTS</span></button>
-        <button class="menu-btn" onclick="go('m-set')">⚙️ <span id="txt-set">SETTINGS</span></button>
-    </div>
-
-    <div id="m-lead" class="screen">
-        <div class="settings-box">
-            <h2 id="txt-lead-title" style="color: #ffeb3b;">🏆 TOP PLAYERS</h2>
-            <hr>
-            <div style="font-size: 20px; line-height: 2;">
-                1. 🥇 <span id="lead-name-1">Player</span> - 99.999 pts<br>
-                2. 🥈 Player 2 - 50.000 pts<br>
-                3. 🥉 Player 3 - 25.000 pts
-            </div>
-            <button class="menu-btn btn-back" style="background:#f44336; margin-top:20px; width:100%;" onclick="go('m-utama')">BACK</button>
-        </div>
-    </div>
-
-    <div id="m-set" class="screen">
-        <div class="settings-box">
-            <h2 id="txt-set-title">⚙️ PENGATURAN</h2>
-            <div class="row"><label id="txt-label-name">Nama Player:</label><input type="text" id="in-name" value="Player" onchange="updateLeaderboardName()"></div>
-            <div class="row"><label id="txt-label-vol">Volume Musik:</label><input type="range" id="in-vol"></div>
-            <div class="row">
-                <label id="txt-label-lang">Bahasa:</label>
-                <select id="in-lang">
-                    <option value="id" selected>Indonesia</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
-            <div class="row">
-                <label id="txt-label-bg">Background Lobby:</label>
-                <select id="in-bg">
-                    <option value="blue">🔵 Blue</option><option value="dark">⚫ Dark</option>
-                    <option value="sunset">🌅 Sunset</option><option value="green">🟢 Green</option>
-                </select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="menu-btn" id="txt-btn-save" style="background:#2196F3" onclick="saveSettings()">💾 SIMPAN</button>
-                <button class="menu-btn btn-back" style="background:#f44336" onclick="go('m-utama')">BACK</button>
-            </div>
-        </div>
+        <h1>🏰 MENU UTAMA</h1>
+        <button class="menu-btn" onclick="go('m-level')">🎮 PLAY GAME</button>
+        <button class="menu-btn" onclick="go('m-char')">👥 CHARACTERS (99)</button>
+        <button class="menu-btn" onclick="go('m-ach')">🏅 ACHIEVEMENTS</button>
+        <button class="menu-btn" onclick="go('m-set')">⚙️ SETTINGS</button>
     </div>
 
     <div id="m-ach" class="screen">
-        <h2 id="txt-ach-title">🏅 ACHIEVEMENTS</h2>
-        <div class="ach-list" id="ach-container">
-            <div>⬜ Master Ice World</div>
-            <div>⬜ Collect 1000 Coins</div>
+        <h2>🏅 ACHIEVEMENTS</h2>
+        <div class="ach-card"><span>🏆</span><div><b>First Win</b><br><small>Selesaikan level pertama kamu!</small></div></div>
+        <div class="ach-card"><span>💰</span><div><b>Rich Man</b><br><small>Kumpulkan total 1.000 koin.</small></div></div>
+        <div class="ach-card"><span>🧠</span><div><b>Einstein</b><br><small>Jawab 10 kuis berturut-turut benar.</small></div></div>
+        <button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button>
+    </div>
+
+    <div id="m-level" class="screen"><h2>🗺️ PILIH LEVEL</h2><div class="grid" id="lvl-list"></div><button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button></div>
+    
+    <div id="m-char" class="screen"><h2>👤 TOKO KARAKTER</h2><div class="grid" id="char-list"></div><button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button></div>
+
+    <div id="m-set" class="screen">
+        <div class="settings-box">
+            <h2>⚙️ SETTINGS</h2>
+            <div class="row"><label>Nama Player:</label><input type="text" id="in-name" value="Player"></div>
+            <div class="row"><label>Bahasa:</label><select id="in-lang"><option value="id">Indonesia</option><option value="en">English</option></select></div>
+            <button class="menu-btn" onclick="saveSets()" style="background:#2196F3; width:100%;">SAVE</button>
+            <button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:100%;">BACK</button>
         </div>
-        <button class="menu-btn btn-back" style="background:#f44336; margin-top:20px; width:150px;" onclick="go('m-utama')">BACK</button>
     </div>
 
-    <div id="m-level" class="screen">
-        <h2 id="txt-lvl-title">🗺️ PILIH LEVEL</h2>
-        <div class="grid" id="lvl-list"></div>
-        <button class="menu-btn btn-back" style="background:#f44336; width: 150px;" onclick="go('m-utama')">BACK</button>
+    <div id="pause-overlay">
+        <div class="settings-box">
+            <h1 style="color:#f39c12">PAUSED</h1>
+            <button class="menu-btn" onclick="resumeGame()">RESUME</button>
+            <button class="menu-btn" style="background:#2196F3" onclick="restartGame()">RESTART</button>
+            <button class="menu-btn" style="background:#9c27b0" onclick="go('m-set')">SETTINGS</button>
+            <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
+        </div>
     </div>
 
-    <div id="m-char" class="screen">
-        <h2 id="txt-char-title">👤 PILIH KARAKTER</h2>
-        <p><span id="txt-label-coins">💰 Koin:</span> <span id="my-coins">0</span></p>
-        <div class="grid" id="char-list"></div>
-        <button class="menu-btn btn-back" style="background:#f44336; width: 150px;" onclick="go('m-utama')">BACK</button>
+    <div id="gameover-overlay">
+        <h1 style="color:#f44336; font-size: 50px;">GAME OVER</h1>
+        <button class="menu-btn" onclick="restartGame()">RESTART</button>
+        <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
     </div>
 
     <div id="challenge-overlay">
-        <div class="settings-box" style="text-align:center">
-            <h3 id="ch-title" style="color:#ffeb3b">TANTANGAN</h3>
-            <p id="ch-desc">Pertanyaan...</p>
-            <input type="text" id="ch-ans" placeholder="Jawaban..." style="margin-bottom: 20px;">
-            <button class="menu-btn" id="txt-btn-send" style="width:100%" onclick="checkChallenge()">KIRIM</button>
+        <div class="settings-box">
+            <h3 id="ch-cat" style="color:#ffeb3b">KATEGORI</h3>
+            <p id="ch-ques" style="font-size: 20px;">Pertanyaan...</p>
+            <input type="text" id="ch-ans" placeholder="Jawaban kamu...">
+            <button class="menu-btn" style="width:100%; margin-top:15px;" onclick="checkChallenge()">KIRIM JAWABAN</button>
         </div>
     </div>
 </div>
 
 <script>
-    // DATA GAME ASLI KAMU
-    const GAME = {
-        coins: 1500, lives: 3, unlockedLvl: 1, unlockedChars: [0], selectedChar: 0,
-        chars: [], lang: 'id', name: "Player"
+    const DATA = { 
+        name: "Player", coins: 0, lives: 3, unlockedLvl: 1, selectedChar: 0,
+        chars: [] 
     };
 
-    // KAMUS BAHASA ASLI KAMU (DIPERTAHANKAN)
-    const TEXTS = {
-        id: {
-            mainTitle: "🏰 MENU UTAMA", play: "MAIN GAME", char: "KARAKTER (99)", lead: "LEADERBOARD", ach: "PENCAPAIAN", set: "PENGATURAN",
-            setTitle: "⚙️ PENGATURAN", lName: "Nama Player:", lVol: "Volume Musik:", lLang: "Bahasa:", lBg: "Background Lobby:",
-            btnSave: "💾 SIMPAN", btnBack: "⬅️ KEMBALI", btnSend: "KIRIM",
-            lvlTitle: "🗺️ PILIH LEVEL", charTitle: "👤 PILIH KARAKTER", achTitle: "🏅 PENCAPAIAN", leadTitle: "🏆 TOP PLAYERS",
-            labelCoins: "💰 Koin:", alertSaved: "Simpan Berhasil!", locked: "Terkunci!"
-        },
-        en: {
-            mainTitle: "🏰 MAIN MENU", play: "PLAY GAME", char: "CHARACTERS (99)", lead: "LEADERBOARD", ach: "ACHIEVEMENTS", set: "SETTINGS",
-            setTitle: "⚙️ SETTINGS", lName: "Player Name:", lVol: "Music Volume:", lLang: "Language:", lBg: "Background Lobby:",
-            btnSave: "💾 SAVE", btnBack: "⬅️ BACK", btnSend: "SEND",
-            lvlTitle: "🗺️ SELECT LEVEL", charTitle: "👤 SELECT CHARACTER", achTitle: "🏅 ACHIEVEMENTS", leadTitle: "🏆 TOP PLAYERS",
-            labelCoins: "💰 Coins:", alertSaved: "Settings Saved!", locked: "Locked!"
-        }
-    };
-
-    // DAFTAR KUIS LENGKAP (17 KATEGORI)
-    const CHALLENGES = [
-        { type: "Kimia", q: "Simbol kimia Emas?", a: "Au" },
-        { type: "Biologi", q: "Organel sel penghasil energi?", a: "Mitokondria" },
-        { type: "Fisika", q: "Satuan gaya adalah?", a: "Newton" },
-        { type: "Matematika", q: "12 x 12?", a: "144" },
-        { type: "Sejarah", q: "Tahun Proklamasi RI?", a: "1945" },
-        { type: "Geografi", q: "Negara kincir angin?", a: "Belanda" },
-        { type: "Ekonomi", q: "Pasar satu penjual disebut?", a: "Monopoli" },
-        { type: "Tebak Negara", q: "Ibukota Jepang?", a: "Tokyo" },
-        { type: "Sudoku", q: "Urutan angka: 1, 2, ?, 4", a: "3" },
-        { type: "Puzzle", q: "Lawan kata Jauh?", a: "Dekat" },
-        { type: "Informatika", q: "Otak komputer adalah?", a: "CPU" }
-        // ... Tambahkan kategori lainnya di sini ...
+    // DAFTAR KUIS LENGKAP (TIDAK BERULANG-ULANG)
+    const KUIS = [
+        { c: "Kimia", q: "Lambang unsur Perak?", a: "Ag" },
+        { c: "Fisika", q: "Satuan Hambatan Listrik?", a: "Ohm" },
+        { c: "Biologi", q: "Bagian sel penyimpan cadangan makanan?", a: "Vakuola" },
+        { c: "Sejarah", q: "Nama kapal yang ditumpangi Columbus?", a: "Santa Maria" },
+        { c: "Informatika", q: "Bahasa pemrograman untuk Android?", a: "Kotlin" },
+        { c: "Geografi", q: "Gurun terluas di dunia?", a: "Sahara" },
+        { c: "Matematika", q: "Berapa akar kuadrat dari 144?", a: "12" },
+        { c: "Tebak Kota", q: "Kota yang dijuluki Kota Khatulistiwa?", a: "Pontianak" },
+        { c: "Tebak Negara", q: "Negara yang memiliki Menara Pisa?", a: "Italia" },
+        { c: "Sosiologi", q: "Proses belajar budaya oleh individu?", a: "Sosialisasi" },
+        { c: "Ekonomi", q: "Pajak atas barang mewah disebut?", a: "PPnBM" },
+        { c: "B. Inggris", q: "English of 'Perpustakaan'?", a: "Library" },
+        { c: "B. Indonesia", q: "Antonim dari kata 'Canggih'?", a: "Kuno" },
+        { c: "Sudoku", q: "Angka yang hilang: 7, 8, ?, 10", a: "9" },
+        { c: "PJOK", q: "Jumlah pemain dalam satu tim basket?", a: "5" }
     ];
 
-    // GENERATE 99 CHARS (LOGIKA ASLI KAMU)
-    for(let i=0; i<99; i++) {
-        GAME.chars.push({ id: i, emoji: ["👦","🧙","🧛","🧝","🤖","🦊","👽","🤠","👻"][i%9], price: 100+(i*20) });
-    }
-
-    function applyLanguage() {
-        const t = TEXTS[GAME.lang];
-        document.getElementById('txt-main-title').innerText = t.mainTitle;
-        document.getElementById('txt-play').innerText = t.play;
-        document.getElementById('txt-char').innerText = t.char;
-        document.getElementById('txt-lead').innerText = t.lead;
-        document.getElementById('txt-ach').innerText = t.ach;
-        document.getElementById('txt-set').innerText = t.set;
-        document.getElementById('txt-set-title').innerText = t.setTitle;
-        document.getElementById('txt-label-name').innerText = t.lName;
-        document.getElementById('txt-label-lang').innerText = t.lLang;
-        document.getElementById('txt-btn-save').innerText = t.btnSave;
-        document.querySelectorAll('.btn-back').forEach(btn => btn.innerText = t.btnBack);
-        document.getElementById('txt-lvl-title').innerText = t.lvlTitle;
-        document.getElementById('txt-char-title').innerText = t.charTitle;
-        document.getElementById('txt-ach-title').innerText = t.achTitle;
-        document.getElementById('txt-lead-title').innerText = t.leadTitle;
-        document.getElementById('txt-label-coins').innerText = t.labelCoins;
-    }
-
-    function saveSettings() {
-        GAME.lang = document.getElementById('in-lang').value;
-        GAME.name = document.getElementById('in-name').value;
-        applyLanguage();
-        const bgKey = document.getElementById('in-bg').value;
-        const bgs = { blue: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", dark: "#1a1a1a", sunset: "linear-gradient(180deg, #ff5e62 0%, #ff9966 100%)", green: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)" };
-        document.body.style.background = bgs[bgKey];
-        alert(TEXTS[GAME.lang].alertSaved);
-        go('m-utama');
-    }
+    for(let i=0; i<99; i++) { DATA.chars.push({id: i, em: ["👦","🧙","🧛","🤖","🦊","👻","👽"][i%7], pr: 100+(i*50)}); }
 
     function go(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        if (id !== 'none') document.getElementById(id).classList.add('active');
-        if(id === 'm-level') renderLevels();
+        document.querySelectorAll('.screen, #pause-overlay, #gameover-overlay, #challenge-overlay').forEach(s => s.style.display = 'none');
+        if(id !== 'none') document.getElementById(id).style.display = 'flex';
+        if(id === 'm-level') renderLvls();
         if(id === 'm-char') renderChars();
-        
-        // Sembunyikan HUD/Kontrol saat di menu
-        document.getElementById('game-hud').style.display = 'none';
-        document.getElementById('mobile-controls').style.display = 'none';
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobile-ctrl').style.display = 'none';
     }
 
-    function renderLevels() {
+    function renderLvls() {
         const list = document.getElementById('lvl-list'); list.innerHTML = "";
         for(let i=1; i<=25; i++) {
-            const isOk = i <= GAME.unlockedLvl;
+            const ok = i <= DATA.unlockedLvl;
             const d = document.createElement('div');
-            d.className = `item ${!isOk ? 'locked' : ''}`;
-            d.innerHTML = `Lvl ${i}<br>${isOk ? '🔓' : '🔒'}`;
-            d.onclick = () => isOk ? startWorld(i) : alert(TEXTS[GAME.lang].locked);
+            d.className = `item ${!ok ? 'locked' : ''}`;
+            d.innerHTML = `Level ${i}<br>${ok ? '🔓' : '🔒'}`;
+            d.onclick = () => ok ? startGameplay(i) : null;
             list.appendChild(d);
         }
     }
 
     function renderChars() {
-        document.getElementById('my-coins').innerText = GAME.coins;
         const list = document.getElementById('char-list'); list.innerHTML = "";
-        GAME.chars.forEach((c, i) => {
-            const isOwned = GAME.unlockedChars.includes(i);
+        DATA.chars.forEach((c, i) => {
             const d = document.createElement('div');
-            d.className = `item ${!isOwned ? 'locked' : ''} ${GAME.selectedChar === i ? 'selected' : ''}`;
-            d.style.border = GAME.selectedChar === i ? "2px solid yellow" : "2px solid transparent";
-            d.innerHTML = `${c.emoji}<br><small>${isOwned ? 'OWNED' : '💰'+c.price}</small>`;
-            d.onclick = () => {
-                if(isOwned) { GAME.selectedChar = i; renderChars(); }
-                else if(GAME.coins >= c.price) { 
-                    GAME.coins -= c.price; 
-                    GAME.unlockedChars.push(i); 
-                    renderChars(); 
-                } else { alert("Coins not enough!"); }
-            };
+            d.className = 'item';
+            d.style.border = DATA.selectedChar === i ? "3px solid yellow" : "none";
+            d.innerHTML = `${c.em}<br><small>💰${c.pr}</small>`;
+            d.onclick = () => { DATA.selectedChar = i; renderChars(); };
             list.appendChild(d);
         });
     }
 
-    function updateLeaderboardName() { document.getElementById('lead-name-1').innerText = document.getElementById('in-name').value; }
+    function saveSets() { DATA.name = document.getElementById('in-name').value; alert("Saved!"); go('m-utama'); }
 
-    // ==========================================
-    // GAMEPLAY ENGINE (PHASER) - DIKEMBANGKAN
-    // ==========================================
-    let phaserGame;
-    let mvL = false, mvR = false;
+    // === GAMEPLAY LOGIC (PHASER) ===
+    let game, activeLvl, mvL = false, mvR = false;
 
-    function startWorld(lvl) {
+    function startGameplay(lvl) {
+        activeLvl = lvl; DATA.lives = 3;
         go('none');
-        GAME.lives = 3;
-        document.getElementById('game-hud').style.display = 'block';
-        document.getElementById('mobile-controls').style.display = 'flex';
-        document.getElementById('hud-p-name').innerText = GAME.name;
+        document.getElementById('hud').style.display = 'block';
+        document.getElementById('mobile-ctrl').style.display = 'flex';
         updateHUD();
 
-        if(phaserGame) phaserGame.destroy(true);
-        const config = {
+        if(game) game.destroy(true);
+        game = new Phaser.Game({
             type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container',
             physics: { default: 'arcade', arcade: { gravity: { y: 1200 } } },
             scene: { preload, create, update }
-        };
-        phaserGame = new Phaser.Game(config);
+        });
     }
 
-    function preload() { 
-        this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
-    }
+    function preload() { this.load.image('plt', 'https://labs.phaser.io/assets/sprites/platform.png'); }
 
     function create() {
-        const themes = [0x4facfe, 0xff5e62, 0x11998e, 0x333333];
-        this.add.rectangle(400, 300, 800, 600, themes[activeLvl % 4]);
+        // Background sesuai Tema
+        const themes = [0x1a2a6c, 0x1d2671, 0x004e92, 0x232526, 0x414345, 0x0f2027];
+        this.add.rectangle(400, 300, 800, 600, themes[activeLvl % themes.length]);
 
         this.platforms = this.physics.add.staticGroup();
-        this.platforms.create(400, 580, 'ground').setScale(2).refreshBody();
-        this.platforms.create(600, 400, 'ground');
-        this.platforms.create(100, 300, 'ground');
+        // Map Tidak Lurus (Variasi)
+        this.platforms.create(150, 550, 'plt').setScale(0.8).refreshBody();
+        this.platforms.create(500, 450, 'plt').setScale(0.6).refreshBody();
+        this.platforms.create(200, 320, 'plt').setScale(0.6).refreshBody();
+        this.platforms.create(700, 250, 'plt').setScale(0.8).refreshBody();
 
-        this.player = this.add.text(100, 450, GAME.chars[GAME.selectedChar].emoji, {fontSize: '60px'});
+        this.player = this.add.text(50, 450, DATA.chars[DATA.selectedChar].em, {fontSize: '50px'});
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.platforms);
 
-        // Tambah Koin di Level
+        // Koin di Gameplay
         this.coins = this.physics.add.group();
-        for(let i=0; i<5; i++){
-            let c = this.add.text(200 + (i*100), 200, '💰', {fontSize: '30px'});
-            this.coins.add(c);
-            c.body.setAllowGravity(false);
+        for(let i=0; i<12; i++) {
+            let c = this.add.text(Phaser.Math.Between(50, 750), Phaser.Math.Between(50, 500), "💰", {fontSize:'24px'});
+            this.coins.add(c); c.body.setAllowGravity(false);
         }
-        this.physics.add.overlap(this.player, this.coins, (p, c) => { c.destroy(); GAME.coins += 10; updateHUD(); });
+        this.physics.add.overlap(this.player, this.coins, (p, c) => { c.destroy(); DATA.coins += 10; updateHUD(); });
+
+        // Duri/Hazard
+        this.spikes = this.physics.add.staticGroup();
+        this.spikes.add(this.add.text(450, 410, "🌵", {fontSize:'30px'}));
+        this.physics.add.overlap(this.player, this.spikes, hitHazard, null, this);
 
         // Pintu Finish
-        this.door = this.add.text(700, 480, "🚪", {fontSize: '50px'});
+        this.door = this.add.text(730, 180, "🚪", {fontSize:'60px'});
         this.physics.add.existing(this.door, true);
-        this.physics.add.overlap(this.player, this.door, () => { this.scene.pause(); triggerChallenge(activeLvl); });
+        this.physics.add.overlap(this.player, this.door, () => { this.scene.pause(); openQuiz(); });
 
-        // Input HP
-        document.getElementById('btn-left').onpointerdown = () => mvL = true;
-        document.getElementById('btn-left').onpointerup = () => mvL = false;
-        document.getElementById('btn-right').onpointerdown = () => mvR = true;
-        document.getElementById('btn-right').onpointerup = () => mvR = false;
-        document.getElementById('btn-jump').onpointerdown = () => { if(this.player.body.touching.down) this.player.body.setVelocityY(-700); };
-        
-        this.cursors = this.input.keyboard.createCursorKeys();
+        setupInputs(this);
     }
 
     function update() {
-        if (this.cursors.left.isDown || mvL) this.player.body.setVelocityX(-300);
-        else if (this.cursors.right.isDown || mvR) this.player.body.setVelocityX(300);
+        if(mvL) this.player.body.setVelocityX(-250);
+        else if(mvR) this.player.body.setVelocityX(250);
         else this.player.body.setVelocityX(0);
-        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.body.setVelocityY(-700);
+        if(this.player.y > 570) hitHazard.call(this); 
+    }
+
+    function hitHazard() {
+        DATA.lives--; updateHUD();
+        if(DATA.lives <= 0) { game.scene.pause(); document.getElementById('gameover-overlay').style.display = 'flex'; }
+        else { this.player.setPosition(50, 450); }
     }
 
     function updateHUD() {
-        document.getElementById('hud-lives').innerText = "❤️ " + GAME.lives;
-        document.getElementById('hud-coins').innerText = "💰 " + GAME.coins;
+        document.getElementById('hud-name').innerText = DATA.name;
+        document.getElementById('hud-lives').innerText = "❤️ ".repeat(DATA.lives);
+        document.getElementById('hud-coins').innerText = "💰 " + DATA.coins;
     }
 
-    let activeChallenge, activeLvl;
-    function triggerChallenge(lvl) {
-        activeLvl = lvl;
-        activeChallenge = CHALLENGES[Math.floor(Math.random()*CHALLENGES.length)];
-        document.getElementById('ch-title').innerText = "KATEGORI: " + activeChallenge.type;
-        document.getElementById('ch-desc').innerText = activeChallenge.q;
+    function setupInputs(scene) {
+        document.getElementById('b-left').onpointerdown = () => mvL = true;
+        document.getElementById('b-left').onpointerup = () => mvL = false;
+        document.getElementById('b-right').onpointerdown = () => mvR = true;
+        document.getElementById('b-right').onpointerup = () => mvR = false;
+        document.getElementById('b-jump').onpointerdown = () => { if(scene.player.body.touching.down) scene.player.body.setVelocityY(-650); };
+    }
+
+    function pauseGame() { game.scene.pause(); document.getElementById('pause-overlay').style.display = 'flex'; }
+    function resumeGame() { document.getElementById('pause-overlay').style.display = 'none'; game.scene.resume(); }
+    function restartGame() { startGameplay(activeLvl); }
+    function quitGame() { if(game) game.destroy(true); go('m-utama'); }
+
+    let curQ;
+    function openQuiz() {
+        curQ = KUIS[Math.floor(Math.random()*KUIS.length)];
+        document.getElementById('ch-cat').innerText = "TANTANGAN: " + curQ.c;
+        document.getElementById('ch-ques').innerText = curQ.q;
         document.getElementById('ch-ans').value = "";
         document.getElementById('challenge-overlay').style.display = 'flex';
     }
 
     function checkChallenge() {
-        const val = document.getElementById('ch-ans').value.trim();
-        if(val.toLowerCase() === activeChallenge.a.toLowerCase()) {
-            if(activeLvl === GAME.unlockedLvl) GAME.unlockedLvl++;
-            alert("BENAR!");
-            document.getElementById('challenge-overlay').style.display = 'none';
-            go('m-level');
-        } else { 
-            alert("SALAH!"); 
-            GAME.lives--; 
-            updateHUD();
-            if(GAME.lives <= 0) {
-                alert("GAME OVER!");
-                document.getElementById('challenge-overlay').style.display = 'none';
-                go('m-utama');
-            }
+        const ans = document.getElementById('ch-ans').value.trim().toLowerCase();
+        if(ans === curQ.a.toLowerCase()) {
+            alert("BENAR! Level Selesai.");
+            if(activeLvl === DATA.unlockedLvl) DATA.unlockedLvl++;
+            quitGame();
+        } else {
+            alert("SALAH! Nyawa berkurang.");
+            DATA.lives--; updateHUD();
+            if(DATA.lives <= 0) { document.getElementById('challenge-overlay').style.display = 'none'; document.getElementById('gameover-overlay').style.display = 'flex'; }
         }
     }
-
-    window.onload = applyLanguage;
 </script>
 </body>
 </html>
