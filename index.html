@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Adventure - Mega Update</title>
+    <title>Super Adventure - Final Update</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
+        /* === STYLE ASLI DARI KAMU (TIDAK DIUBAH) === */
         :root { --bg-current: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         body { margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif; background: var(--bg-current); display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.5s; }
         
@@ -26,32 +27,29 @@
         .item { background: #2196F3; padding: 15px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; text-align: center; }
         .item.locked { background: #555; opacity: 0.7; cursor: not-allowed; }
 
-        /* HUD - Informasi Karakter */
-        #hud-gameplay { position: absolute; top: 10px; left: 10px; z-index: 20; color: white; display: none; text-shadow: 2px 2px #000; pointer-events: none; }
-        
-        /* Mobile Controls */
-        #mobile-ui { position: absolute; bottom: 20px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; z-index: 30; }
-        .btn-touch { width: 70px; height: 70px; background: rgba(255,255,255,0.3); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; user-select: none; }
+        /* === FITUR BARU: HUD & MOBILE CONTROLS === */
+        #hud { position: absolute; top: 15px; left: 15px; z-index: 5; color: white; text-align: left; display: none; text-shadow: 2px 2px #000; pointer-events: none; }
+        #mobile-btns { position: absolute; bottom: 20px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; z-index: 100; }
+        .btn-touch { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; user-select: none; }
 
-        #challenge-overlay, #pause-overlay, #gameover-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; display:none; flex-direction:column; align-items:center; justify-content:center; }
+        #challenge-overlay, #pause-overlay, #gameover-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="hud-gameplay">
+    <div id="hud">
         <b id="hud-name">Player</b><br>
-        <span id="hud-lives">❤️ Nyawa: 3</span><br>
-        <span id="hud-coins">💰 Koin: 0</span><br>
-        <button onclick="pauseGame()" style="pointer-events: auto; background: #f39c12; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 5px;">PAUSE</button>
+        <span id="hud-lives">❤️ 3</span> | <span id="hud-coins">💰 0</span><br>
+        <button onclick="pauseGame()" style="pointer-events: auto; margin-top:5px; background:#f39c12; border:none; color:white; border-radius:4px; padding:2px 8px; cursor:pointer;">PAUSE</button>
     </div>
 
-    <div id="mobile-ui">
-        <div style="display: flex; gap: 20px;">
-            <div class="btn-touch" id="btn-left">◀️</div>
-            <div class="btn-touch" id="btn-right">▶️</div>
+    <div id="mobile-btns">
+        <div style="display: flex; gap: 15px;">
+            <div class="btn-touch" id="btn-l">◀️</div>
+            <div class="btn-touch" id="btn-r">▶️</div>
         </div>
-        <div class="btn-touch" id="btn-jump">⬆️</div>
+        <div class="btn-touch" id="btn-j">⬆️</div>
     </div>
 
     <div id="m-utama" class="screen active">
@@ -66,13 +64,7 @@
         <div class="settings-box">
             <h2 id="txt-set-title">⚙️ PENGATURAN</h2>
             <div class="row"><label>Nama Player:</label><input type="text" id="in-name" value="Player"></div>
-            <div class="row">
-                <label>Bahasa:</label>
-                <select id="in-lang">
-                    <option value="id">Indonesia</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
+            <div class="row"><label>Bahasa:</label><select id="in-lang"><option value="id">Indonesia</option><option value="en">English</option></select></div>
             <div style="display: flex; gap: 10px;">
                 <button class="menu-btn" style="background:#2196F3" onclick="saveSettings()">💾 SIMPAN</button>
                 <button class="menu-btn" style="background:#f44336" onclick="go('m-utama')">BACK</button>
@@ -86,18 +78,17 @@
 
     <div id="pause-overlay">
         <div class="settings-box">
-            <h1 style="color: #f39c12;">⏸️ PAUSED</h1>
+            <h1 style="color:#f39c12">PAUSED</h1>
             <button class="menu-btn" onclick="resumeGame()">RESUME</button>
             <button class="menu-btn" style="background:#2196F3" onclick="restartLevel()">RESTART</button>
-            <button class="menu-btn" style="background:#4facfe" onclick="go('m-set')">SETTINGS</button>
             <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
         </div>
     </div>
 
     <div id="gameover-overlay">
         <div class="settings-box">
-            <h1 style="color: #f44336;">💀 GAME OVER</h1>
-            <button class="menu-btn" onclick="restartLevel()">RESTART</button>
+            <h1 style="color:#f44336">GAME OVER</h1>
+            <button class="menu-btn" onclick="restartLevel()">RETRY</button>
             <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
         </div>
     </div>
@@ -106,8 +97,8 @@
         <div class="settings-box">
             <h3 id="ch-title" style="color:#ffeb3b">TANTANGAN</h3>
             <p id="ch-desc">Pertanyaan...</p>
-            <input type="text" id="ch-ans" placeholder="Jawaban..." style="margin-bottom: 20px;">
-            <button class="menu-btn" style="width:100%" onclick="checkChallenge()">KIRIM</button>
+            <input type="text" id="ch-ans" placeholder="Jawaban...">
+            <button class="menu-btn" style="width:100%; margin-top:15px;" onclick="checkChallenge()">KIRIM</button>
         </div>
     </div>
 </div>
@@ -118,40 +109,41 @@
         chars: [], lang: 'id'
     };
 
-    // Mega List Tantangan
+    // Daftar Quiz Lengkap Sesuai Permintaan
     const CHALLENGES = [
-        { t: "Kimia", q: "Lambang unsur Emas?", a: "Au" },
-        { t: "Biologi", q: "Satuan terkecil makhluk hidup?", a: "Sel" },
-        { t: "Fisika", q: "Satuan Gaya?", a: "Newton" },
-        { t: "Sejarah", q: "Tahun Proklamasi RI?", a: "1945" },
-        { t: "Geografi", q: "Ibukota Indonesia sekarang?", a: "Jakarta" },
-        { t: "Ekonomi", q: "Pasar dengan satu penjual disebut?", a: "Monopoli" },
-        { t: "Tebak Negara", q: "Negara Menara Eiffel?", a: "Prancis" },
-        { t: "Sudoku", q: "Lengkapi deret: 2, 4, ?, 8", a: "6" },
-        { t: "Tebak Kota", q: "Kota Pahlawan adalah?", a: "Surabaya" },
-        { t: "Informatika", q: "Otak komputer adalah?", a: "CPU" },
-        { t: "Seni Rupa", q: "Campuran Merah dan Kuning?", a: "Oranye" },
-        { t: "PJOK", q: "Induk organisasi Bola Basket Indonesia?", a: "Perbasi" },
-        { t: "B. Inggris", q: "English of 'Matahari'?", a: "Sun" },
-        { t: "B. Indonesia", q: "Antonim dari 'Besar'?", a: "Kecil" },
-        { t: "Sosiologi", q: "Manusia sebagai makhluk sosial disebut?", a: "Zoon Politikon" },
-        { t: "Main Puzzle", q: "Susun: A-B-L-O", a: "Bola" },
-        { t: "Main Kartu", q: "Kartu AS bernilai paling?", a: "Tinggi" }
+        { t: "Kimia", q: "Lambang unsur Oksigen?", a: "O" },
+        { t: "Biologi", q: "Alat pernapasan ikan?", a: "Insang" },
+        { t: "Fisika", q: "Satuan Tegangan Listrik?", a: "Volt" },
+        { t: "Matematika", q: "15 x 4?", a: "60" },
+        { t: "Sejarah", q: "Tahun Indonesia Merdeka?", a: "1945" },
+        { t: "Geografi", q: "Ibukota Perancis?", a: "Paris" },
+        { t: "Informatika", q: "Shortcut untuk Copy?", a: "Ctrl+C" },
+        { t: "Sosiologi", q: "Interaksi antar individu disebut interaksi...?", a: "Sosial" },
+        { t: "Ekonomi", q: "Uang kertas di Indonesia dicetak oleh?", a: "Peruri" },
+        { t: "B. Inggris", q: "English of 'Sekolah'?", a: "School" },
+        { t: "B. Indonesia", q: "Persamaan kata (Sinonim) Pintar?", a: "Cerdas" },
+        { t: "Tebak Negara", q: "Negara Gajah Putih?", a: "Thailand" },
+        { t: "Tebak Kota", q: "Kota Kembang adalah?", a: "Bandung" },
+        { t: "Sudoku", q: "Urutan angka: 1, 2, ?, 4", a: "3" },
+        { t: "Puzzle", q: "Susun kata: I-M-A-N", a: "Main" }
     ];
 
     for(let i=0; i<99; i++) {
-        GAME.chars.push({ id: i, emoji: ["👦","🧙","🧛","🧝","🤖","🦊","🐱","🦁"][i%8] });
+        GAME.chars.push({ id: i, emoji: ["👦","🧙","🧛","🧝","🤖","🦊","👽","👻"][i%8] });
     }
 
     function go(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('pause-overlay').style.display = 'none';
         document.getElementById('gameover-overlay').style.display = 'none';
+        document.getElementById('challenge-overlay').style.display = 'none';
         if (id !== 'none') document.getElementById(id).classList.add('active');
+        
         if(id === 'm-level') renderLevels();
         if(id === 'm-char') renderChars();
-        document.getElementById('hud-gameplay').style.display = 'none';
-        document.getElementById('mobile-ui').style.display = 'none';
+
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobile-btns').style.display = 'none';
     }
 
     function saveSettings() {
@@ -185,14 +177,14 @@
     }
 
     let phaserGame, activeLvl, activeTheme;
-    let moveLeft = false, moveRight = false;
+    let mvL = false, mvR = false;
 
     function startWorld(lvl, theme) {
         activeLvl = lvl; activeTheme = theme;
         GAME.lives = 3;
         go('none');
-        document.getElementById('hud-gameplay').style.display = 'block';
-        document.getElementById('mobile-ui').style.display = 'flex';
+        document.getElementById('hud').style.display = 'block';
+        document.getElementById('mobile-btns').style.display = 'flex';
         updateHUD();
 
         if(phaserGame) phaserGame.destroy(true);
@@ -207,30 +199,26 @@
     function preload() { this.load.image('plt', 'https://labs.phaser.io/assets/sprites/platform.png'); }
 
     function create() {
-        const colors = { Lava: 0xff4500, Es: 0x87ceeb, Duri: 0x555555, Langit: 0x4facfe, Goa: 0x3d2b1f, Gunung: 0x228b22 };
+        const colors = { Lava: 0xff4500, Es: 0x87ceeb, Duri: 0x228b22, Langit: 0x4facfe, Goa: 0x333333, Gunung: 0x6d4c41 };
         this.add.rectangle(400, 300, 800, 600, colors[activeTheme]);
 
-        // Platform Kompleks (Ada Ketinggian & Lubang)
         this.platforms = this.physics.add.staticGroup();
-        this.platforms.create(100, 580, 'plt').setScale(0.5).refreshBody();
-        this.platforms.create(350, 450, 'plt').setScale(0.5).refreshBody();
-        this.platforms.create(600, 350, 'plt').setScale(0.5).refreshBody();
-        this.platforms.create(200, 250, 'plt').setScale(0.4).refreshBody();
-        this.platforms.create(700, 200, 'plt').setScale(0.4).refreshBody();
+        // Map tidak lurus (Ada tinggi rendah & lubang)
+        this.platforms.create(150, 580, 'plt').setScale(0.8).refreshBody();
+        this.platforms.create(500, 450, 'plt').setScale(0.5).refreshBody();
+        this.platforms.create(200, 320, 'plt').setScale(0.5).refreshBody();
+        this.platforms.create(700, 250, 'plt').setScale(0.6).refreshBody();
 
-        // Koin Banyak
         this.coins = this.physics.add.group();
-        for(let i=0; i<20; i++) {
-            let c = this.add.text(Phaser.Math.Between(50, 750), Phaser.Math.Between(50, 500), "💰", {fontSize:'20px'});
+        for(let i=0; i<15; i++) {
+            let c = this.add.text(Phaser.Math.Between(50, 750), Phaser.Math.Between(50, 500), "💰", {fontSize:'24px'});
             this.coins.add(c); c.body.setAllowGravity(false);
         }
 
-        // Duri Berbahaya
         this.spikes = this.physics.add.staticGroup();
-        this.spikes.add(this.add.text(350, 410, "🌵", {fontSize:'30px'}));
+        this.spikes.add(this.add.text(500, 410, "🌵", {fontSize:'30px'}));
 
-        // Player
-        this.player = this.add.text(50, 500, GAME.chars[GAME.selectedChar].emoji, {fontSize: '50px'});
+        this.player = this.add.text(50, 480, GAME.chars[GAME.selectedChar].emoji, {fontSize: '50px'});
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.platforms);
@@ -238,41 +226,39 @@
         this.physics.add.overlap(this.player, this.coins, (p, c) => { c.destroy(); GAME.coins += 10; updateHUD(); });
         this.physics.add.overlap(this.player, this.spikes, hitHazard, null, this);
 
-        // Pintu Finish
-        this.door = this.add.text(700, 130, "🚪", {fontSize:'50px'});
+        this.door = this.add.text(730, 180, "🚪", {fontSize:'50px'});
         this.physics.add.existing(this.door, true);
         this.physics.add.overlap(this.player, this.door, () => { this.scene.pause(); triggerChallenge(); });
 
-        // Setup Mobile Events
         setupMobileControls(this);
     }
 
     function update() {
-        if (moveLeft) this.player.body.setVelocityX(-250);
-        else if (moveRight) this.player.body.setVelocityX(250);
+        if (mvL) this.player.body.setVelocityX(-250);
+        else if (mvR) this.player.body.setVelocityX(250);
         else this.player.body.setVelocityX(0);
 
-        // Cek Jatuh ke Lubang
-        if(this.player.y > 570 && this.player.x > 180 && this.player.x < 280) hitHazard.call(this);
+        if(this.player.y > 570) hitHazard.call(this); // Jatuh ke lubang
     }
 
     function setupMobileControls(scene) {
-        const l = document.getElementById('btn-left'), r = document.getElementById('btn-right'), j = document.getElementById('btn-jump');
-        l.onpointerdown = () => moveLeft = true; l.onpointerup = () => moveLeft = false;
-        r.onpointerdown = () => moveRight = true; r.onpointerup = () => moveRight = false;
-        j.onpointerdown = () => { if(scene.player.body.touching.down) scene.player.body.setVelocityY(-650); };
+        document.getElementById('btn-l').onpointerdown = () => mvL = true;
+        document.getElementById('btn-l').onpointerup = () => mvL = false;
+        document.getElementById('btn-r').onpointerdown = () => mvR = true;
+        document.getElementById('btn-r').onpointerup = () => mvR = false;
+        document.getElementById('btn-j').onpointerdown = () => { if(scene.player.body.touching.down) scene.player.body.setVelocityY(-650); };
     }
 
     function hitHazard() {
         GAME.lives--; updateHUD();
         if(GAME.lives <= 0) { phaserGame.scene.pause(); document.getElementById('gameover-overlay').style.display = 'flex'; }
-        else { this.player.setPosition(50, 500); }
+        else { this.player.setPosition(50, 480); }
     }
 
     function updateHUD() {
         document.getElementById('hud-name').innerText = GAME.name;
-        document.getElementById('hud-lives').innerText = "❤️ Nyawa: " + GAME.lives;
-        document.getElementById('hud-coins').innerText = "💰 Koin: " + GAME.coins;
+        document.getElementById('hud-lives').innerText = "❤️ " + GAME.lives;
+        document.getElementById('hud-coins').innerText = "💰 " + GAME.coins;
     }
 
     function pauseGame() { phaserGame.scene.pause(); document.getElementById('pause-overlay').style.display = 'flex'; }
@@ -293,9 +279,8 @@
         const val = document.getElementById('ch-ans').value.trim().toLowerCase();
         if(val === activeChallenge.a.toLowerCase()) {
             if(activeLvl === GAME.unlockedLvl) GAME.unlockedLvl++;
-            alert("BENAR!"); document.getElementById('challenge-overlay').style.display = 'none';
-            quitGame();
-        } else { alert("SALAH!"); }
+            alert("BENAR!"); quitGame();
+        } else { alert("SALAH! Coba lagi."); }
     }
 </script>
 </body>
