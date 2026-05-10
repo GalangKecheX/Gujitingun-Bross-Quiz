@@ -1,280 +1,771 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Super Adventure - Final Mega Update</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-    <style>
-        /* === STYLE ASLI KAMU (TIDAK DIUBAH) === */
-        :root { --bg-current: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif; background: var(--bg-current); display: flex; justify-content: center; align-items: center; min-height: 100vh; transition: background 0.5s; }
-        #game-container { position: relative; width: 800px; height: 600px; border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #222; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        .screen { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: white; text-align: center; }
-        .active { display: flex; background: rgba(0,0,0,0.8); }
-        .menu-btn { background: #4CAF50; border: none; border-radius: 8px; color: white; padding: 12px 25px; margin: 8px; width: 320px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px #2e7d32; }
-        .menu-btn:active { transform: translateY(2px); box-shadow: 0 2px #2e7d32; }
-        .settings-box { background: rgba(0,0,0,0.9); padding: 25px; border-radius: 15px; width: 500px; border: 2px solid #fff; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 20px; max-height: 350px; overflow-y: auto; width: 90%; }
-        .item { background: #2196F3; padding: 15px; border-radius: 10px; cursor: pointer; text-align: center; }
-        .item.locked { background: #555; opacity: 0.7; }
-        
-        /* === BAGIAN ACHIEVEMENT (KEMBALI KE ASLI) === */
-        .ach-card { background: rgba(255,255,255,0.1); width: 80%; padding: 15px; margin: 5px; border-radius: 10px; display: flex; align-items: center; gap: 15px; text-align: left; border-left: 5px solid #ffeb3b; }
-
-        /* === GAMEPLAY HUD & CONTROLS === */
-        #hud { position: absolute; top: 15px; left: 15px; z-index: 100; color: white; pointer-events: none; display: none; text-shadow: 2px 2px #000; }
-        #mobile-ctrl { position: absolute; bottom: 20px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; z-index: 100; box-sizing: border-box; }
-        .btn-touch { width: 75px; height: 75px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; user-select: none; }
-        #pause-overlay, #gameover-overlay, #challenge-overlay { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, shrink-to-fit=yes">
+  <title>Gujitingun Bross Quiz</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    #game-container {
+      position: relative;
+      width: 900px;
+      height: 600px;
+      background: #000;
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(0,255,200,0.5);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #mobile-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
+      display: none;
+      justify-content: space-between;
+      padding: 0 20px;
+      pointer-events: auto;
+    }
+    .ctrl-btn {
+      width: 70px;
+      height: 70px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      color: white;
+      backdrop-filter: blur(5px);
+      border: 2px solid white;
+      cursor: pointer;
+      user-select: none;
+    }
+    .ctrl-btn:active {
+      background: rgba(255,255,100,0.7);
+      transform: scale(0.9);
+    }
+    .menu-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20, 20, 40, 0.95);
+      backdrop-filter: blur(15px);
+      border-radius: 25px;
+      padding: 25px;
+      color: #fff;
+      text-align: center;
+      pointer-events: auto;
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      max-height: 85%;
+      overflow-y: auto;
+      border: 2px solid gold;
+      box-shadow: 0 0 30px rgba(255,215,0,0.5);
+      min-width: 340px;
+    }
+    .menu-panel.active {
+      display: flex;
+    }
+    button {
+      background: linear-gradient(45deg, #ffb347, #ff6b6b);
+      border: none;
+      padding: 14px 30px;
+      border-radius: 40px;
+      font-weight: bold;
+      font-size: 18px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      letter-spacing: 1px;
+      box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+      margin: 5px;
+      border: 2px solid white;
+    }
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(255,107,107,0.7);
+    }
+    .small-btn {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+    input, select {
+      padding: 10px;
+      border-radius: 25px;
+      border: none;
+      text-align: center;
+      font-size: 16px;
+    }
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .char-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.2s;
+    }
+    .char-card.locked {
+      opacity: 0.6;
+      filter: grayscale(0.8);
+    }
+    .char-card.selected {
+      border-color: gold;
+      background: rgba(255,215,0,0.2);
+    }
+    .char-icon {
+      font-size: 35px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 18px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #4caf50;
+      width: 0%;
+    }
+  </style>
 </head>
 <body>
-
 <div id="game-container">
-    <div id="hud">
-        <b id="hud-name">Player</b><br>
-        <span id="hud-lives">❤️ ❤️ ❤️</span> | <span id="hud-coins">💰 0</span>
-        <br><button onclick="pauseGame()" style="pointer-events: auto; margin-top: 10px; background: #f39c12; border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">PAUSE</button>
+  <canvas id="gameCanvas" width="900" height="600"></canvas>
+  <div id="ui-overlay">
+    <div id="loading-screen" class="menu-panel active" style="background: #0a0a1a;">
+      <h1 style="color:gold;">Gujitingun Bross Quiz</h1>
+      <div class="progress-bar"><div id="load-fill" class="progress-fill" style="width:0%"></div></div>
+      <p style="color:#aaa;">Loading...</p>
     </div>
-
-    <div id="mobile-ctrl">
-        <div style="display:flex; gap:20px;">
-            <div class="btn-touch" id="b-left">◀️</div>
-            <div class="btn-touch" id="b-right">▶️</div>
-        </div>
-        <div class="btn-touch" id="b-jump">⬆️</div>
+    <div id="lobby-panel" class="menu-panel">
+      <h1 style="color:gold;">🏠 Gujitingun Bross Quiz</h1>
+      <button id="btn-play">🎮 PLAY GAME</button>
+      <button id="btn-characters">👥 CHARACTERS (90)</button>
+      <button id="btn-leaderboard">🏆 LEADERBOARD</button>
+      <button id="btn-achievements">🎖️ ACHIEVEMENTS</button>
+      <button id="btn-settings">⚙️ SETTINGS</button>
+      <button id="btn-exit">🚪 EXIT</button>
+      <p style="color:#aaa;">Coin: <span id="coin-display">0</span> 🪙</p>
     </div>
-
-    <div id="m-utama" class="screen active">
-        <h1>🏰 MENU UTAMA</h1>
-        <button class="menu-btn" onclick="go('m-level')">🎮 PLAY GAME</button>
-        <button class="menu-btn" onclick="go('m-char')">👥 CHARACTERS (99)</button>
-        <button class="menu-btn" onclick="go('m-ach')">🏅 ACHIEVEMENTS</button>
-        <button class="menu-btn" onclick="go('m-set')">⚙️ SETTINGS</button>
+    <div id="char-panel" class="menu-panel">
+      <h2>👥 Characters</h2>
+      <div class="character-grid" id="char-grid"></div>
+      <button id="btn-back-char">🔙 Back</button>
+      <p>Pilih karakter, lalu PLAY.</p>
     </div>
-
-    <div id="m-ach" class="screen">
-        <h2>🏅 ACHIEVEMENTS</h2>
-        <div class="ach-card"><span>🏆</span><div><b>First Win</b><br><small>Selesaikan level pertama kamu!</small></div></div>
-        <div class="ach-card"><span>💰</span><div><b>Rich Man</b><br><small>Kumpulkan total 1.000 koin.</small></div></div>
-        <div class="ach-card"><span>🧠</span><div><b>Einstein</b><br><small>Jawab 10 kuis berturut-turut benar.</small></div></div>
-        <button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button>
+    <div id="level-panel" class="menu-panel">
+      <h2>🗺️ Pilih Level</h2>
+      <div id="level-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;"></div>
+      <button id="btn-back-level">🔙 Back</button>
     </div>
-
-    <div id="m-level" class="screen"><h2>🗺️ PILIH LEVEL</h2><div class="grid" id="lvl-list"></div><button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button></div>
-    
-    <div id="m-char" class="screen"><h2>👤 TOKO KARAKTER</h2><div class="grid" id="char-list"></div><button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:150px;">BACK</button></div>
-
-    <div id="m-set" class="screen">
-        <div class="settings-box">
-            <h2>⚙️ SETTINGS</h2>
-            <div class="row"><label>Nama Player:</label><input type="text" id="in-name" value="Player"></div>
-            <div class="row"><label>Bahasa:</label><select id="in-lang"><option value="id">Indonesia</option><option value="en">English</option></select></div>
-            <button class="menu-btn" onclick="saveSets()" style="background:#2196F3; width:100%;">SAVE</button>
-            <button class="menu-btn" onclick="go('m-utama')" style="background:#f44336; width:100%;">BACK</button>
-        </div>
+    <div id="leaderboard-panel" class="menu-panel">
+      <h2>🏆 Leaderboard</h2>
+      <ol id="lb-list"></ol>
+      <button id="btn-back-lb">🔙 Back</button>
     </div>
-
-    <div id="pause-overlay">
-        <div class="settings-box">
-            <h1 style="color:#f39c12">PAUSED</h1>
-            <button class="menu-btn" onclick="resumeGame()">RESUME</button>
-            <button class="menu-btn" style="background:#2196F3" onclick="restartGame()">RESTART</button>
-            <button class="menu-btn" style="background:#9c27b0" onclick="go('m-set')">SETTINGS</button>
-            <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
-        </div>
+    <div id="achievements-panel" class="menu-panel">
+      <h2>🎖️ Achievements</h2>
+      <div id="ach-list" style="text-align:left;"></div>
+      <button id="btn-back-ach">🔙 Back</button>
     </div>
-
-    <div id="gameover-overlay">
-        <h1 style="color:#f44336; font-size: 50px;">GAME OVER</h1>
-        <button class="menu-btn" onclick="restartGame()">RESTART</button>
-        <button class="menu-btn" style="background:#f44336" onclick="quitGame()">QUIT</button>
+    <div id="settings-panel" class="menu-panel">
+      <h2>⚙️ Settings</h2>
+      <input id="input-name" placeholder="Nama Pemain" maxlength="15">
+      <label>Volume: <input type="range" id="vol-slider" min="0" max="100" value="70"></label>
+      <select id="lang-select"><option>Indonesia</option><option>English</option></select>
+      <select id="theme-select"><option>Light</option><option>Dark</option></select>
+      <label>Background Lobby (1-80): <input type="number" id="bg-index" min="1" max="80" value="1"></label>
+      <button id="btn-save-settings">💾 Save</button>
+      <button id="btn-back-settings">🔙 Back</button>
     </div>
-
-    <div id="challenge-overlay">
-        <div class="settings-box">
-            <h3 id="ch-cat" style="color:#ffeb3b">KATEGORI</h3>
-            <p id="ch-ques" style="font-size: 20px;">Pertanyaan...</p>
-            <input type="text" id="ch-ans" placeholder="Jawaban kamu...">
-            <button class="menu-btn" style="width:100%; margin-top:15px;" onclick="checkChallenge()">KIRIM JAWABAN</button>
-        </div>
+    <div id="quiz-panel" class="menu-panel">
+      <h2>🧠 Kuis Wajib</h2>
+      <p id="quiz-question"></p>
+      <div id="quiz-options"></div>
+      <p id="quiz-feedback"></p>
     </div>
+    <div id="gameover-panel" class="menu-panel">
+      <h2>💀 GAME OVER</h2>
+      <button id="btn-restart">🔄 RESTART</button>
+      <button id="btn-lobby-go">🏠 LOBBY</button>
+    </div>
+    <div id="pause-panel" class="menu-panel">
+      <h2>⏸️ PAUSE</h2>
+      <button id="btn-resume">▶️ RESUME</button>
+      <button id="btn-restart-pause">🔄 RESTART</button>
+      <button id="btn-settings-pause">⚙️ SETTINGS</button>
+      <button id="btn-quit-pause">🚪 QUIT</button>
+    </div>
+  </div>
+  <div id="mobile-controls">
+    <div class="ctrl-btn" id="ctrl-left">◀</div>
+    <div class="ctrl-btn" id="ctrl-jump">⬆</div>
+    <div class="ctrl-btn" id="ctrl-skill">⚡</div>
+    <div class="ctrl-btn" id="ctrl-right">▶</div>
+  </div>
 </div>
-
 <script>
-    const DATA = { 
-        name: "Player", coins: 0, lives: 3, unlockedLvl: 1, selectedChar: 0,
-        chars: [] 
-    };
+  (function() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // DAFTAR KUIS LENGKAP (TIDAK BERULANG-ULANG)
-    const KUIS = [
-        { c: "Kimia", q: "Lambang unsur Perak?", a: "Ag" },
-        { c: "Fisika", q: "Satuan Hambatan Listrik?", a: "Ohm" },
-        { c: "Biologi", q: "Bagian sel penyimpan cadangan makanan?", a: "Vakuola" },
-        { c: "Sejarah", q: "Nama kapal yang ditumpangi Columbus?", a: "Santa Maria" },
-        { c: "Informatika", q: "Bahasa pemrograman untuk Android?", a: "Kotlin" },
-        { c: "Geografi", q: "Gurun terluas di dunia?", a: "Sahara" },
-        { c: "Matematika", q: "Berapa akar kuadrat dari 144?", a: "12" },
-        { c: "Tebak Kota", q: "Kota yang dijuluki Kota Khatulistiwa?", a: "Pontianak" },
-        { c: "Tebak Negara", q: "Negara yang memiliki Menara Pisa?", a: "Italia" },
-        { c: "Sosiologi", q: "Proses belajar budaya oleh individu?", a: "Sosialisasi" },
-        { c: "Ekonomi", q: "Pajak atas barang mewah disebut?", a: "PPnBM" },
-        { c: "B. Inggris", q: "English of 'Perpustakaan'?", a: "Library" },
-        { c: "B. Indonesia", q: "Antonim dari kata 'Canggih'?", a: "Kuno" },
-        { c: "Sudoku", q: "Angka yang hilang: 7, 8, ?, 10", a: "9" },
-        { c: "PJOK", q: "Jumlah pemain dalam satu tim basket?", a: "5" }
+    // GAME STATE
+    const STATE = {
+      LOADING: 'loading', LOBBY: 'lobby', CHAR_SELECT: 'char', LEVEL_SELECT: 'level',
+      PLAYING: 'playing', QUIZ: 'quiz', GAMEOVER: 'gameover', PAUSE: 'pause',
+      LEADERBOARD: 'leaderboard', ACHIEVEMENTS: 'achievements', SETTINGS: 'settings'
+    };
+    let currentState = STATE.LOADING;
+    let currentLevel = 1;
+    let player, platforms, enemies, hazards, powerups, exitDoor, boss, levelCoins, score;
+    let lives = 3;
+    let gameLoopId = null;
+    let keys = {};
+    let mobileLeft = false, mobileRight = false, mobileJump = false, mobileSkill = false;
+
+    // DATA
+    const TOTAL_LEVELS = 25;
+    const themes = ['❄️ Ice','🌋 Lava','☁️ Sky','⛰️ Mountain','⚫ Cave','💀 Thorns'];
+    let levelUnlocked = Array(TOTAL_LEVELS).fill(false);
+    let levelStars = Array(TOTAL_LEVELS).fill(0);
+    let coins = 500; // start coin
+    let playerName = 'Player1';
+    let volume = 70;
+    let language = 'Indonesia';
+    let themeUI = 'Dark';
+    let bgIndex = 1;
+
+    // 90 CHARACTERS
+    const SKILLS = ['Fireball','Double Jump','Shield','Speed','Invincible'];
+    const charData = [];
+    const charNames = [];
+    const emojiPool = ['🧑','👨','👩','🧔','👴','👵','🧑‍🦰','👨‍🦰','👩‍🦰','👨‍🦱','👩‍🦱','🧑‍🦱','🧑‍🦳','👨‍🦳','👩‍🦳','🧑‍🦲','👨‍🦲','👩‍🦲','🦸','🦹','🧙','🧚','🧛','🧜','🧝','🧞','🧟','👼','🎅','🤶','👮','👷','💂','🕵️','👩‍⚕️','👨‍⚕️','👩‍🌾','👨‍🌾','👩‍🍳','👨‍🍳','👩‍🎓','👨‍🎓','👩‍🎤','👨‍🎤','👩‍🏫','👨‍🏫','👩‍🏭','👨‍🏭','👩‍💻','👨‍💻','👩‍💼','👨‍💼','👩‍🔧','👨‍🔧','👩‍🔬','👨‍🔬','👩‍🎨','👨‍🎨','👩‍🚒','👨‍🚒','👩‍✈️','👨‍✈️','👩‍🚀','👨‍🚀','👩‍⚖️','👨‍⚖️','🤴','👸','🦸‍♀️','🦸‍♂️','🦹‍♀️','🦹‍♂️','🧙‍♀️','🧙‍♂️','🧚‍♀️','🧚‍♂️','🧛‍♀️','🧛‍♂️','🧜‍♀️','🧜‍♂️','🧝‍♀️','🧝‍♂️','👯','👯‍♀️','👯‍♂️','🧖','🧖‍♀️','🧖‍♂️','🧗','🧗‍♀️','🧗‍♂️','🤸','🤸‍♀️','🤸‍♂️','🏋️','🏋️‍♀️','🏋️‍♂️','🚴','🚴‍♀️','🚴‍♂️'];
+    for (let i = 0; i < 90; i++) {
+      let name = `Hero${i+1}`;
+      if (i < 20) name = ['Aldo','Bella','Cakra','Dian','Eko','Fiona','Galih','Hana','Irfan','Joko','Kiki','Lina','Miko','Nia','Omar','Putri','Qory','Rian','Sari','Tio'][i] || name;
+      else name = 'Ch'+(i+1);
+      charNames.push(name);
+      let emoji = emojiPool[i % emojiPool.length];
+      let skill = SKILLS[i % SKILLS.length];
+      let unlockMethod = (i < 2) ? 'free' : (i < 15 ? 'coin' : 'quest');
+      let price = (i % 5 === 0) ? 150 : (i % 7 === 0) ? 250 : 100 + (i%10)*20;
+      let questCondition = null;
+      if (unlockMethod === 'quest') {
+        if (i % 3 === 0) questCondition = { type: 'defeat_boss', level: Math.min(i%5+2, 5) };
+        else if (i % 3 === 1) questCondition = { type: 'complete_quiz', count: 3 + (i%4) };
+        else questCondition = { type: 'collect_coins', amount: 200 + i*5 };
+      }
+      charData.push({
+        id: i, name, emoji, skill, unlockMethod, price, questCondition,
+        unlocked: (i < 2) ? true : false, purchased: false
+      });
+    }
+    let selectedCharId = 0;
+
+    // Achievements definitions
+    const achievementsDef = [
+      { id: 'first_blood', desc: 'First Kill', check: (s)=>s.kills>=1 },
+      { id: 'boss_slayer', desc: 'Kalahkan Boss Pertama', check: (s)=>s.bossKills>=1 },
+      { id: 'coin100', desc: 'Kumpulkan 100 Coin (total)', check: (s)=>s.totalCoins>=100 },
+      { id: 'quiz5', desc: 'Selesaikan 5 Kuis', check: (s)=>s.quizCompleted>=5 },
+      { id: 'level10', desc: 'Capai Level 10', check: (s)=>s.maxLevel>=10 },
+    ];
+    let achievements = [];
+    let stats = { kills:0, bossKills:0, totalCoins:0, quizCompleted:0, maxLevel:1 };
+
+    // Quiz bank (singkat)
+    const quizBank = [
+      { q: 'Ibu kota Indonesia?', opts: ['Jakarta','Bandung','Surabaya','Medan'], ans:0, sub:'Geografi' },
+      { q: 'H2O adalah rumus kimia?', opts: ['Air','Garam','Asam','Besi'], ans:0, sub:'Kimia' },
+      { q: '2 + 2 * 3 = ?', opts: ['8','10','12','6'], ans:0, sub:'Matematika' },
+      { q: 'Hewan menyusui disebut?', opts: ['Mamalia','Reptil','Amfibi','Ikan'], ans:0, sub:'Biologi' },
+      { q: 'Proklamasi RI tahun?', opts: ['1945','1942','1950','1935'], ans:0, sub:'Sejarah' },
+      { q: 'Gunung tertinggi di Indonesia?', opts: ['Puncak Jaya','Semeru','Kerinci','Rinjani'], ans:0, sub:'Geografi' },
+      { q: 'Bahasa Inggris "apel"?', opts: ['Apple','Banana','Orange','Grape'], ans:0, sub:'Inggris' },
     ];
 
-    for(let i=0; i<99; i++) { DATA.chars.push({id: i, em: ["👦","🧙","🧛","🤖","🦊","👻","👽"][i%7], pr: 100+(i*50)}); }
-
-    function go(id) {
-        document.querySelectorAll('.screen, #pause-overlay, #gameover-overlay, #challenge-overlay').forEach(s => s.style.display = 'none');
-        if(id !== 'none') document.getElementById(id).style.display = 'flex';
-        if(id === 'm-level') renderLvls();
-        if(id === 'm-char') renderChars();
-        document.getElementById('hud').style.display = 'none';
-        document.getElementById('mobile-ctrl').style.display = 'none';
+    function getRandomQuiz() {
+      return quizBank[Math.floor(Math.random() * quizBank.length)];
     }
 
-    function renderLvls() {
-        const list = document.getElementById('lvl-list'); list.innerHTML = "";
-        for(let i=1; i<=25; i++) {
-            const ok = i <= DATA.unlockedLvl;
-            const d = document.createElement('div');
-            d.className = `item ${!ok ? 'locked' : ''}`;
-            d.innerHTML = `Level ${i}<br>${ok ? '🔓' : '🔒'}`;
-            d.onclick = () => ok ? startGameplay(i) : null;
-            list.appendChild(d);
+    // LOBBY BACKGROUNDS (80 variants)
+    const bgStyles = [];
+    for (let i=0; i<80; i++) {
+      let h1 = (i*17)%360, h2 = (i*31+40)%360;
+      bgStyles.push(`linear-gradient(135deg, hsl(${h1},70%,50%), hsl(${h2},80%,40%))`);
+    }
+
+    // DOM elements
+    const loadingScreen = document.getElementById('loading-screen');
+    const loadFill = document.getElementById('load-fill');
+    const lobbyPanel = document.getElementById('lobby-panel');
+    const charPanel = document.getElementById('char-panel');
+    const levelPanel = document.getElementById('level-panel');
+    const leaderboardPanel = document.getElementById('leaderboard-panel');
+    const achievementsPanel = document.getElementById('achievements-panel');
+    const settingsPanel = document.getElementById('settings-panel');
+    const quizPanel = document.getElementById('quiz-panel');
+    const gameoverPanel = document.getElementById('gameover-panel');
+    const pausePanel = document.getElementById('pause-panel');
+    const mobileControls = document.getElementById('mobile-controls');
+    const coinDisplay = document.getElementById('coin-display');
+
+    function hideAllPanels() {
+      document.querySelectorAll('.menu-panel').forEach(p=>p.classList.remove('active'));
+    }
+    function showPanel(panel) {
+      hideAllPanels();
+      if (panel) panel.classList.add('active');
+    }
+
+    function updateLobbyCoin() { coinDisplay.textContent = coins; }
+
+    // LOCAL STORAGE
+    function saveData() {
+      const d = {
+        levelUnlocked, levelStars, coins, playerName, volume, language, themeUI, bgIndex,
+        charUnlocked: charData.map(c=>c.unlocked), charPurchased: charData.map(c=>c.purchased),
+        achievements, stats, leaderboard: getLeaderboard(), selectedCharId
+      };
+      localStorage.setItem('gujitingun_save', JSON.stringify(d));
+    }
+    function loadData() {
+      const raw = localStorage.getItem('gujitingun_save');
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        levelUnlocked = d.levelUnlocked || levelUnlocked;
+        levelStars = d.levelStars || levelStars;
+        coins = d.coins ?? coins;
+        playerName = d.playerName || 'Player1';
+        volume = d.volume ?? 70;
+        language = d.language || 'Indonesia';
+        themeUI = d.themeUI || 'Dark';
+        bgIndex = d.bgIndex || 1;
+        if (d.charUnlocked) charData.forEach((c,i)=>c.unlocked = d.charUnlocked[i]??c.unlocked);
+        if (d.charPurchased) charData.forEach((c,i)=>c.purchased = d.charPurchased[i]??false);
+        achievements = d.achievements || [];
+        stats = d.stats || {kills:0,bossKills:0,totalCoins:0,quizCompleted:0,maxLevel:1};
+        if (d.selectedCharId!==undefined) selectedCharId = d.selectedCharId;
+        if (d.leaderboard) localStorage.setItem('lb', JSON.stringify(d.leaderboard));
+      } catch(e){}
+    }
+    function getLeaderboard() {
+      const raw = localStorage.getItem('lb');
+      return raw ? JSON.parse(raw) : [];
+    }
+    function setLeaderboard(lb) { localStorage.setItem('lb', JSON.stringify(lb)); }
+
+    // GAME LOOP
+    function startGameLoop() {
+      if (gameLoopId) cancelAnimationFrame(gameLoopId);
+      function loop() {
+        if (currentState === STATE.PLAYING) updateGame();
+        renderGame();
+        gameLoopId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    // PLAYER CLASS
+    class Player {
+      constructor() {
+        this.x = 80; this.y = 400; this.w = 30; this.h = 40;
+        this.vx = 0; this.vy = 0;
+        this.speed = 4; this.jumpPower = -9;
+        this.onGround = false;
+        this.facing = 1;
+        this.skillCooldown = 0;
+        this.invincibleTimer = 0;
+        this.shieldActive = false;
+        this.doubleJumpReady = false;
+        this.hasDoubleJump = false;
+        this.skillType = charData[selectedCharId].skill;
+      }
+      update() {
+        if (this.invincibleTimer > 0) this.invincibleTimer--;
+        if (this.skillCooldown > 0) this.skillCooldown--;
+        let move = 0;
+        if (keys['ArrowLeft'] || keys['a'] || mobileLeft) move = -1;
+        if (keys['ArrowRight'] || keys['d'] || mobileRight) move = 1;
+        this.vx = move * this.speed;
+        if (this.skillType === 'Speed') this.vx *= 1.6;
+
+        if ((keys[' '] || keys['ArrowUp'] || keys['w'] || mobileJump) && this.onGround) {
+          this.vy = this.jumpPower;
+          this.onGround = false;
+          if (this.skillType === 'Double Jump') this.doubleJumpReady = true;
+        } else if ((keys[' '] || keys['ArrowUp'] || keys['w'] || mobileJump) && this.doubleJumpReady && !this.onGround) {
+          this.vy = this.jumpPower * 0.9;
+          this.doubleJumpReady = false;
         }
+        this.vy += 0.6;
+        this.y += this.vy;
+        this.x += this.vx;
+        if (this.x < 10) this.x = 10;
+        if (this.x > 870) this.x = 870;
+        if (this.y > 650) { lives--; resetPlayerPosition(); }
+        if (this.y < -100) this.y = -100;
+        this.facing = move !== 0 ? move : this.facing;
+      }
     }
 
-    function renderChars() {
-        const list = document.getElementById('char-list'); list.innerHTML = "";
-        DATA.chars.forEach((c, i) => {
-            const d = document.createElement('div');
-            d.className = 'item';
-            d.style.border = DATA.selectedChar === i ? "3px solid yellow" : "none";
-            d.innerHTML = `${c.em}<br><small>💰${c.pr}</small>`;
-            d.onclick = () => { DATA.selectedChar = i; renderChars(); };
-            list.appendChild(d);
-        });
+    function resetPlayerPosition() {
+      player.x = 80; player.y = 400; player.vy = 0; player.vx = 0;
     }
 
-    function saveSets() { DATA.name = document.getElementById('in-name').value; alert("Saved!"); go('m-utama'); }
-
-    // === GAMEPLAY LOGIC (PHASER) ===
-    let game, activeLvl, mvL = false, mvR = false;
-
-    function startGameplay(lvl) {
-        activeLvl = lvl; DATA.lives = 3;
-        go('none');
-        document.getElementById('hud').style.display = 'block';
-        document.getElementById('mobile-ctrl').style.display = 'flex';
-        updateHUD();
-
-        if(game) game.destroy(true);
-        game = new Phaser.Game({
-            type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container',
-            physics: { default: 'arcade', arcade: { gravity: { y: 1200 } } },
-            scene: { preload, create, update }
-        });
+    // LEVEL GENERATION (simple)
+    function generateLevel(levelNum) {
+      platforms = [
+        {x:0,y:550,w:900,h:20}, // ground
+        {x:200,y:420,w:120,h:15}, {x:400,y:350,w:100,h:15}, {x:600,y:280,w:130,h:15},
+        {x:750,y:400,w:100,h:15}
+      ];
+      enemies = [
+        {x:300,y:530,w:30,h:30,type:'walker',dir:1,alive:true},
+        {x:500,y:530,w:30,h:30,type:'walker',dir:-1,alive:true},
+        {x:700,y:380,w:40,h:50,type:'boss',hp:3,alive:true}
+      ];
+      hazards = [
+        {x:150,y:540,w:40,h:10,type:'spike'},
+        {x:450,y:540,w:35,h:10,type:'spike'}
+      ];
+      powerups = [
+        {x:250,y:400,w:20,h:20,type:'coin',active:true},
+        {x:650,y:250,w:20,h:20,type:'heart',active:true}
+      ];
+      exitDoor = {x:820,y:510,w:40,h:50};
+      levelCoins = 0;
+      score = 0;
+      lives = 3;
+      boss = enemies.find(e=>e.type==='boss');
     }
 
-    function preload() { this.load.image('plt', 'https://labs.phaser.io/assets/sprites/platform.png'); }
-
-    function create() {
-        // Background sesuai Tema
-        const themes = [0x1a2a6c, 0x1d2671, 0x004e92, 0x232526, 0x414345, 0x0f2027];
-        this.add.rectangle(400, 300, 800, 600, themes[activeLvl % themes.length]);
-
-        this.platforms = this.physics.add.staticGroup();
-        // Map Tidak Lurus (Variasi)
-        this.platforms.create(150, 550, 'plt').setScale(0.8).refreshBody();
-        this.platforms.create(500, 450, 'plt').setScale(0.6).refreshBody();
-        this.platforms.create(200, 320, 'plt').setScale(0.6).refreshBody();
-        this.platforms.create(700, 250, 'plt').setScale(0.8).refreshBody();
-
-        this.player = this.add.text(50, 450, DATA.chars[DATA.selectedChar].em, {fontSize: '50px'});
-        this.physics.add.existing(this.player);
-        this.player.body.setCollideWorldBounds(true);
-        this.physics.add.collider(this.player, this.platforms);
-
-        // Koin di Gameplay
-        this.coins = this.physics.add.group();
-        for(let i=0; i<12; i++) {
-            let c = this.add.text(Phaser.Math.Between(50, 750), Phaser.Math.Between(50, 500), "💰", {fontSize:'24px'});
-            this.coins.add(c); c.body.setAllowGravity(false);
+    function updateGame() {
+      player.update();
+      // platforms collision
+      player.onGround = false;
+      for (let p of platforms) {
+        if (player.x+player.w > p.x && player.x < p.x+p.w &&
+            player.y+player.h > p.y && player.y < p.y+p.h) {
+          if (player.vy > 0 && player.y+player.h - player.vy <= p.y) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+            player.doubleJumpReady = (player.skillType==='Double Jump');
+          }
         }
-        this.physics.add.overlap(this.player, this.coins, (p, c) => { c.destroy(); DATA.coins += 10; updateHUD(); });
-
-        // Duri/Hazard
-        this.spikes = this.physics.add.staticGroup();
-        this.spikes.add(this.add.text(450, 410, "🌵", {fontSize:'30px'}));
-        this.physics.add.overlap(this.player, this.spikes, hitHazard, null, this);
-
-        // Pintu Finish
-        this.door = this.add.text(730, 180, "🚪", {fontSize:'60px'});
-        this.physics.add.existing(this.door, true);
-        this.physics.add.overlap(this.player, this.door, () => { this.scene.pause(); openQuiz(); });
-
-        setupInputs(this);
-    }
-
-    function update() {
-        if(mvL) this.player.body.setVelocityX(-250);
-        else if(mvR) this.player.body.setVelocityX(250);
-        else this.player.body.setVelocityX(0);
-        if(this.player.y > 570) hitHazard.call(this); 
-    }
-
-    function hitHazard() {
-        DATA.lives--; updateHUD();
-        if(DATA.lives <= 0) { game.scene.pause(); document.getElementById('gameover-overlay').style.display = 'flex'; }
-        else { this.player.setPosition(50, 450); }
-    }
-
-    function updateHUD() {
-        document.getElementById('hud-name').innerText = DATA.name;
-        document.getElementById('hud-lives').innerText = "❤️ ".repeat(DATA.lives);
-        document.getElementById('hud-coins').innerText = "💰 " + DATA.coins;
-    }
-
-    function setupInputs(scene) {
-        document.getElementById('b-left').onpointerdown = () => mvL = true;
-        document.getElementById('b-left').onpointerup = () => mvL = false;
-        document.getElementById('b-right').onpointerdown = () => mvR = true;
-        document.getElementById('b-right').onpointerup = () => mvR = false;
-        document.getElementById('b-jump').onpointerdown = () => { if(scene.player.body.touching.down) scene.player.body.setVelocityY(-650); };
-    }
-
-    function pauseGame() { game.scene.pause(); document.getElementById('pause-overlay').style.display = 'flex'; }
-    function resumeGame() { document.getElementById('pause-overlay').style.display = 'none'; game.scene.resume(); }
-    function restartGame() { startGameplay(activeLvl); }
-    function quitGame() { if(game) game.destroy(true); go('m-utama'); }
-
-    let curQ;
-    function openQuiz() {
-        curQ = KUIS[Math.floor(Math.random()*KUIS.length)];
-        document.getElementById('ch-cat').innerText = "TANTANGAN: " + curQ.c;
-        document.getElementById('ch-ques').innerText = curQ.q;
-        document.getElementById('ch-ans').value = "";
-        document.getElementById('challenge-overlay').style.display = 'flex';
-    }
-
-    function checkChallenge() {
-        const ans = document.getElementById('ch-ans').value.trim().toLowerCase();
-        if(ans === curQ.a.toLowerCase()) {
-            alert("BENAR! Level Selesai.");
-            if(activeLvl === DATA.unlockedLvl) DATA.unlockedLvl++;
-            quitGame();
-        } else {
-            alert("SALAH! Nyawa berkurang.");
-            DATA.lives--; updateHUD();
-            if(DATA.lives <= 0) { document.getElementById('challenge-overlay').style.display = 'none'; document.getElementById('gameover-overlay').style.display = 'flex'; }
+      }
+      // enemies
+      for (let e of enemies) {
+        if (!e.alive) continue;
+        if (e.type==='walker') {
+          e.x += e.dir * 1.5;
+          if (e.x < 50 || e.x > 850) e.dir *= -1;
         }
+        // collision with player
+        if (player.x+player.w > e.x && player.x < e.x+e.w &&
+            player.y+player.h > e.y && player.y < e.y+e.h) {
+          if (player.vy > 0 && player.y+player.h - player.vy <= e.y+5) {
+            // stomp
+            if (e.type==='boss') {
+              e.hp--;
+              if (e.hp <= 0) { e.alive = false; stats.bossKills++; coins+=30; }
+            } else { e.alive = false; stats.kills++; coins+=10; }
+            player.vy = -6;
+          } else {
+            if (player.invincibleTimer <= 0 && !player.shieldActive) {
+              lives--; player.invincibleTimer = 40;
+              if (lives <= 0) { currentState = STATE.GAMEOVER; showPanel(gameoverPanel); }
+              resetPlayerPosition();
+            } else if (player.shieldActive) { player.shieldActive = false; }
+          }
+        }
+      }
+      // hazards
+      for (let h of hazards) {
+        if (player.x+player.w > h.x && player.x < h.x+h.w && player.y+player.h > h.y && player.y < h.y+h.h) {
+          if (player.invincibleTimer<=0 && !player.shieldActive) {
+            lives--; player.invincibleTimer=40;
+            if (lives<=0) { currentState=STATE.GAMEOVER; showPanel(gameoverPanel); }
+          } else if (player.shieldActive) player.shieldActive=false;
+        }
+      }
+      // powerups
+      for (let p of powerups) {
+        if (!p.active) continue;
+        if (player.x+player.w>p.x && player.x<p.x+p.w && player.y+player.h>p.y && player.y<p.y+p.h) {
+          p.active = false;
+          if (p.type==='coin') { coins+=20; levelCoins++; }
+          else if (p.type==='heart') lives = Math.min(lives+1,5);
+        }
+      }
+      // exit door
+      if (player.x+player.w > exitDoor.x && player.x < exitDoor.x+exitDoor.w &&
+          player.y+player.h > exitDoor.y && player.y < exitDoor.y+exitDoor.h) {
+        currentState = STATE.QUIZ;
+        showPanel(quizPanel);
+        startQuiz();
+      }
+      // check gameover
+      if (lives <= 0) {
+        currentState = STATE.GAMEOVER;
+        showPanel(gameoverPanel);
+      }
     }
+
+    function renderGame() {
+      ctx.clearRect(0,0,900,600);
+      // background
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0,0,900,600);
+      // platforms
+      ctx.fillStyle = '#654321';
+      for (let p of platforms) ctx.fillRect(p.x,p.y,p.w,p.h);
+      // hazards
+      ctx.fillStyle = 'red';
+      for (let h of hazards) ctx.fillRect(h.x,h.y,h.w,h.h);
+      // enemies
+      for (let e of enemies) {
+        if (!e.alive) continue;
+        ctx.fillStyle = e.type==='boss'?'darkred':'orange';
+        ctx.fillRect(e.x,e.y,e.w,e.h);
+      }
+      // powerups
+      for (let p of powerups) {
+        if (!p.active) continue;
+        ctx.fillStyle = p.type==='coin'?'gold':'pink';
+        ctx.fillRect(p.x,p.y,p.w,p.h);
+      }
+      // exit
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(exitDoor.x,exitDoor.y,exitDoor.w,exitDoor.h);
+      // player
+      ctx.fillStyle = player.invincibleTimer>0?'cyan':'dodgerblue';
+      ctx.fillRect(player.x,player.y,player.w,player.h);
+      // HUD
+      ctx.fillStyle = 'white';
+      ctx.font = '18px sans-serif';
+      ctx.fillText(`❤️ ${lives}  ⭐ ${score}  🪙 ${coins}`, 20, 30);
+    }
+
+    let currentQuiz = null;
+    function startQuiz() {
+      currentQuiz = getRandomQuiz();
+      document.getElementById('quiz-question').textContent = currentQuiz.q;
+      const optDiv = document.getElementById('quiz-options');
+      optDiv.innerHTML = '';
+      currentQuiz.opts.forEach((opt,idx)=>{
+        const btn = document.createElement('button');
+        btn.textContent = opt;
+        btn.onclick = ()=> answerQuiz(idx);
+        optDiv.appendChild(btn);
+      });
+      document.getElementById('quiz-feedback').textContent = '';
+    }
+    function answerQuiz(idx) {
+      if (idx === currentQuiz.ans) {
+        stats.quizCompleted++;
+        levelStars[currentLevel-1] = Math.max(levelStars[currentLevel-1], lives>=3?3:lives>=2?2:1);
+        if (currentLevel < TOTAL_LEVELS) levelUnlocked[currentLevel] = true;
+        coins += 50;
+        saveData();
+        alert('✅ Benar! Level Selesai!');
+        currentState = STATE.LEVEL_SELECT;
+        showPanel(levelPanel);
+        buildLevelGrid();
+      } else {
+        document.getElementById('quiz-feedback').textContent = '❌ Salah, coba lagi.';
+        coins = Math.max(0, coins-5);
+        saveData();
+        startQuiz();
+      }
+    }
+
+    function buildCharGrid() {
+      const grid = document.getElementById('char-grid');
+      grid.innerHTML = '';
+      charData.forEach(c=>{
+        const card = document.createElement('div');
+        card.className = 'char-card' + (c.unlocked?'':' locked') + (selectedCharId===c.id?' selected':'');
+        card.innerHTML = `<div class="char-icon">${c.emoji}</div><div>${c.name}</div><small>${c.skill}</small>`;
+        if (!c.unlocked) {
+          if (c.unlockMethod==='coin') card.innerHTML += `<br><small>🔒 ${c.price}🪙</small>`;
+          else card.innerHTML += `<br><small>🔒 Quest</small>`;
+        }
+        card.onclick = ()=>{
+          if (!c.unlocked) {
+            if (c.unlockMethod==='coin' && coins >= c.price) {
+              coins -= c.price; c.unlocked = true; c.purchased = true; saveData(); buildCharGrid();
+            } else alert('Tidak cukup coin atau perlu quest.');
+          } else {
+            selectedCharId = c.id; saveData(); buildCharGrid();
+          }
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    function buildLevelGrid() {
+      const grid = document.getElementById('level-grid');
+      grid.innerHTML = '';
+      for (let i=0;i<TOTAL_LEVELS;i++) {
+        const btn = document.createElement('button');
+        const unlocked = levelUnlocked[i];
+        btn.textContent = `${i+1} ${unlocked? '⭐'+levelStars[i] : '🔒'}`;
+        btn.disabled = !unlocked;
+        btn.onclick = ()=>{
+          currentLevel = i+1;
+          startLevel();
+        };
+        grid.appendChild(btn);
+      }
+    }
+
+    function startLevel() {
+      currentState = STATE.PLAYING;
+      hideAllPanels();
+      generateLevel(currentLevel);
+      player = new Player();
+      resetPlayerPosition();
+      mobileControls.style.display = 'flex';
+    }
+
+    function backToLobby() {
+      currentState = STATE.LOBBY;
+      hideAllPanels();
+      showPanel(lobbyPanel);
+      mobileControls.style.display = 'none';
+      if (gameLoopId) cancelAnimationFrame(gameLoopId);
+      gameLoopId = null;
+      document.getElementById('game-container').style.background = bgStyles[bgIndex-1] || bgStyles[0];
+      updateLobbyCoin();
+    }
+
+    // EVENT LISTENERS
+    window.addEventListener('keydown', e=>{ keys[e.key] = true; if (e.key==='Escape' && currentState===STATE.PLAYING) { currentState=STATE.PAUSE; showPanel(pausePanel); } });
+    window.addEventListener('keyup', e=>{ keys[e.key] = false; });
+    document.getElementById('ctrl-left').addEventListener('pointerdown',()=>mobileLeft=true);
+    document.getElementById('ctrl-left').addEventListener('pointerup',()=>mobileLeft=false);
+    document.getElementById('ctrl-right').addEventListener('pointerdown',()=>mobileRight=true);
+    document.getElementById('ctrl-right').addEventListener('pointerup',()=>mobileRight=false);
+    document.getElementById('ctrl-jump').addEventListener('pointerdown',()=>mobileJump=true);
+    document.getElementById('ctrl-jump').addEventListener('pointerup',()=>mobileJump=false);
+    document.getElementById('ctrl-skill').addEventListener('pointerdown',()=>mobileSkill=true);
+    document.getElementById('ctrl-skill').addEventListener('pointerup',()=>mobileSkill=false);
+
+    document.getElementById('btn-play').onclick = ()=>{ currentState=STATE.LEVEL_SELECT; showPanel(levelPanel); buildLevelGrid(); };
+    document.getElementById('btn-characters').onclick = ()=>{ currentState=STATE.CHAR_SELECT; showPanel(charPanel); buildCharGrid(); };
+    document.getElementById('btn-leaderboard').onclick = ()=>{ showPanel(leaderboardPanel); renderLeaderboard(); };
+    document.getElementById('btn-achievements').onclick = ()=>{ showPanel(achievementsPanel); renderAchievements(); };
+    document.getElementById('btn-settings').onclick = ()=>{
+      document.getElementById('input-name').value = playerName;
+      document.getElementById('vol-slider').value = volume;
+      document.getElementById('lang-select').value = language;
+      document.getElementById('theme-select').value = themeUI;
+      document.getElementById('bg-index').value = bgIndex;
+      showPanel(settingsPanel);
+    };
+    document.getElementById('btn-exit').onclick = ()=>{ if(confirm('Keluar game?')) window.close(); };
+    document.getElementById('btn-save-settings').onclick = ()=>{
+      playerName = document.getElementById('input-name').value || 'Player1';
+      volume = document.getElementById('vol-slider').value;
+      language = document.getElementById('lang-select').value;
+      themeUI = document.getElementById('theme-select').value;
+      bgIndex = parseInt(document.getElementById('bg-index').value) || 1;
+      saveData(); backToLobby();
+    };
+    document.getElementById('btn-back-char').onclick = backToLobby;
+    document.getElementById('btn-back-level').onclick = backToLobby;
+    document.getElementById('btn-back-lb').onclick = backToLobby;
+    document.getElementById('btn-back-ach').onclick = backToLobby;
+    document.getElementById('btn-back-settings').onclick = backToLobby;
+    document.getElementById('btn-restart').onclick = ()=>{ startLevel(); showPanel(null); };
+    document.getElementById('btn-lobby-go').onclick = backToLobby;
+    document.getElementById('btn-resume').onclick = ()=>{ currentState=STATE.PLAYING; showPanel(null); };
+    document.getElementById('btn-restart-pause').onclick = ()=>{ startLevel(); showPanel(null); };
+    document.getElementById('btn-quit-pause').onclick = backToLobby;
+
+    function renderLeaderboard() {
+      const lb = getLeaderboard();
+      const list = document.getElementById('lb-list');
+      list.innerHTML = lb.slice(0,3).map((e,i)=>`<li>${i+1}. ${e.name} - ${e.score}</li>`).join('') || '<li>Belum ada data</li>';
+    }
+    function renderAchievements() {
+      const list = document.getElementById('ach-list');
+      list.innerHTML = achievementsDef.map(a=>{
+        const done = achievements.includes(a.id);
+        return `<div>${done?'✅':'⬜'} ${a.desc}</div>`;
+      }).join('');
+    }
+
+    // SIMULATE LOADING
+    setTimeout(()=>{
+      let prog = 0;
+      const intv = setInterval(()=>{
+        prog += 15;
+        loadFill.style.width = prog+'%';
+        if (prog>=100) {
+          clearInterval(intv);
+          loadData();
+          backToLobby();
+          showPanel(lobbyPanel);
+          document.getElementById('game-container').style.background = bgStyles[bgIndex-1]||bgStyles[0];
+          updateLobbyCoin();
+          currentState = STATE.LOBBY;
+          startGameLoop();
+        }
+      }, 80);
+    }, 200);
+
+    // initial achievements check
+    function checkAchievements() {
+      achievementsDef.forEach(a=>{ if (!achievements.includes(a.id) && a.check(stats)) achievements.push(a.id); });
+      saveData();
+    }
+    setInterval(()=>{ if(currentState===STATE.PLAYING) checkAchievements(); }, 2000);
+  })();
 </script>
 </body>
 </html>
