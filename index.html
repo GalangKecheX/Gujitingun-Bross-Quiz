@@ -6,8 +6,10 @@
 <title>Gujitingun Bross Quiz</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-body{background:#0a0f1a;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;touch-action:manipulation;user-select:none}
-#game-container{position:relative;width:900px;height:600px;background:#000;overflow:hidden;border-radius:25px;box-shadow:0 0 50px rgba(0,180,255,0.6)}
+/* FIX: body allows scaling, not flex-centered (game-container positioned by JS) */
+body{background:#0a0f1a;overflow:hidden;touch-action:manipulation;user-select:none;width:100vw;height:100vh;}
+/* FIX: game-container uses fixed positioning for proper scaling on all screens */
+#game-container{position:fixed;width:900px;height:600px;background:#000;overflow:hidden;border-radius:25px;box-shadow:0 0 50px rgba(0,180,255,0.6);transform-origin:top left;}
 canvas{display:block;width:100%;height:100%;background:transparent}
 #ui-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 .menu-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,15,30,0.95);backdrop-filter:blur(18px);border-radius:30px;padding:25px 30px;color:#fff;text-align:center;pointer-events:auto;display:none;flex-direction:column;gap:12px;max-height:88%;overflow-y:auto;border:2px solid rgba(255,215,0,0.7);box-shadow:0 0 40px rgba(255,200,0,0.4);min-width:360px;z-index:10;}
@@ -26,14 +28,12 @@ button:disabled{background:#555;box-shadow:none;transform:none;cursor:not-allowe
 .char-card.selected{border-color:gold;background:rgba(255,215,0,0.25);box-shadow:0 0 15px gold}
 .char-icon{width:50px;height:50px;display:block;margin:0 auto}
 .quest-tooltip{font-size:10px;color:#aaa;margin-top:2px;font-style:italic}
-/* LEVEL GRID - redesigned to match circular style */
 .level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:4px}
 .level-item{display:flex;flex-direction:column;align-items:center;gap:4px}
 .level-btn-unlocked{width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#ff7043,#e64a19);border:2px solid rgba(255,180,100,0.6);box-shadow:0 4px 12px rgba(255,100,50,0.5);color:#fff;font-weight:bold;cursor:pointer;transition:0.2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .level-btn-locked{width:58px;height:58px;border-radius:16px;background:#1a1d2e;border:2px solid rgba(255,255,255,0.08);color:#555;cursor:not-allowed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .level-btn-unlocked:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(255,100,50,0.8)}
 .level-world-tag{font-size:9px;color:#888;text-align:center;line-height:1.3}
-/* PROGRESS BAR (loading) */
 .progress-bar{width:220px;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;margin:8px auto;overflow:hidden}
 .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#ffd700,#ff9a3c);border-radius:4px;transition:width 0.1s}
 #mobile-controls{position:absolute;bottom:15px;left:0;width:100%;display:none;justify-content:space-between;padding:0 25px;pointer-events:auto;z-index:20}
@@ -78,7 +78,6 @@ button:disabled{background:#555;box-shadow:none;transform:none;cursor:not-allowe
 <p id="coin-info" style="font-size:13px;color:#aaa;"></p>
 <button id="btn-back-char">🔙 <span data-lang="back">Kembali</span></button>
 </div>
-<!-- LEVEL PANEL: added X/close button -->
 <div id="level-panel" class="menu-panel">
 <button id="btn-close-level" class="close-btn">✖</button>
 <h2 id="level-title">🗺️ Pilih Level</h2>
@@ -155,6 +154,19 @@ const GROUND_Y = 540;
 const TOTAL_LEVELS = 25;
 const IS_MOBILE = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
+// =============================================
+// FIX 1: RESPONSIVE SCALING - fit all screen sizes including landscape mobile
+// =============================================
+const scaleGame = () => {
+  const gc = document.getElementById('game-container');
+  const scale = Math.min(window.innerWidth / 900, window.innerHeight / 600);
+  gc.style.transform = `scale(${scale})`;
+  gc.style.left = Math.max(0, (window.innerWidth - 900 * scale) / 2) + 'px';
+  gc.style.top = Math.max(0, (window.innerHeight - 600 * scale) / 2) + 'px';
+};
+window.addEventListener('resize', scaleGame);
+window.addEventListener('orientationchange', () => setTimeout(scaleGame, 150));
+
 const dict = {
 id:{play:'MAIN GAME',characters:'KARAKTER',leaderboard:'PAPAN PERINGKAT',achievements:'PRESTASI',settings:'PENGATURAN',exit:'KELUAR',back:'Kembali',volume:'Volume',bg_lobby:'Latar Lobby',save:'Simpan',quiz_title:'Kuis Wajib',gameover:'GAME OVER',restart:'ULANGI',lobby:'LOBBY',pause:'JEDA',resume:'LANJUT',quit:'KELUAR',loading:'Memuat...',coin_info:'💰 Dapatkan koin dengan bermain, mengalahkan musuh, boss, dan mengerjakan kuis.',level_select:'Pilih Level',world_ice:'❄️ Dunia Es',world_lava:'🌋 Dunia Lava',world_sky:'☁️ Dunia Langit',world_mountain:'⛰️ Dunia Gunung',world_cave:'⚫ Dunia Goa',world_thorns:'💀 Dunia Duri',world_final:'👑 FINAL BOSS',name_placeholder:'Nama Pemain'},
 en:{play:'PLAY GAME',characters:'CHARACTERS',leaderboard:'LEADERBOARD',achievements:'ACHIEVEMENTS',settings:'SETTINGS',exit:'EXIT',back:'Back',volume:'Volume',bg_lobby:'Lobby Background',save:'Save',quiz_title:'Mandatory Quiz',gameover:'GAME OVER',restart:'RESTART',lobby:'LOBBY',pause:'PAUSE',resume:'RESUME',quit:'QUIT',loading:'Loading...',coin_info:'💰 Earn coins by playing, defeating enemies, bosses, and quizzes.',level_select:'Select Level',world_ice:'❄️ Ice World',world_lava:'🌋 Lava World',world_sky:'☁️ Sky World',world_mountain:'⛰️ Mountain World',world_cave:'⚫ Dark Cave',world_thorns:'💀 Thorn World',world_final:'👑 FINAL BOSS',name_placeholder:'Player Name'}
@@ -163,12 +175,12 @@ let currentLang = 'id';
 const t = k => dict[currentLang]?.[k] || k;
 const applyLanguage = lang => {
   currentLang = lang;
-  document.querySelectorAll('[data-lang]').forEach(el => { const k=el.getAttribute('data-lang'); if(dict[lang]?.[k]) el.textContent=dict[lang][k]; });
-  document.getElementById('loading-text').textContent = t('loading');
-  document.getElementById('coin-info').textContent = t('coin_info');
-  document.getElementById('level-title').innerHTML = '🗺️ ' + t('level_select');
-  document.getElementById('quiz-title').innerHTML = '🧠 ' + t('quiz_title');
-  document.getElementById('input-name').placeholder = t('name_placeholder');
+  document.querySelectorAll('[data-lang]').forEach(el=>{const k=el.getAttribute('data-lang');if(dict[lang]?.[k])el.textContent=dict[lang][k];});
+  document.getElementById('loading-text').textContent=t('loading');
+  document.getElementById('coin-info').textContent=t('coin_info');
+  document.getElementById('level-title').innerHTML='🗺️ '+t('level_select');
+  document.getElementById('quiz-title').innerHTML='🧠 '+t('quiz_title');
+  document.getElementById('input-name').placeholder=t('name_placeholder');
 };
 
 const THEME_CFG = {
@@ -181,7 +193,7 @@ const THEME_CFG = {
   final:   {bg1:'#12082a',bg2:'#200f45',platColor:'#6a4800',platTop:'#ffd700',enemyEmoji:'😈',bossEmoji:'👑',weapEmoji:'🗡️',weapName:'Pedang Legenda',hazColor:'#8b6914',groundDecor:'gold'}
 };
 
-const quizBank = [
+const quizBank=[
 {q:{id:'Lambang kimia untuk Air adalah?',en:'Chemical symbol for Water?'},opts:{id:['H₂O','O₂','CO₂','NaCl'],en:['H₂O','O₂','CO₂','NaCl']},ans:0,sub:'Kimia',type:'quiz'},
 {q:{id:'Unsur dengan simbol Fe adalah?',en:'Element with symbol Fe is?'},opts:{id:['Besi','Emas','Tembaga','Perak'],en:['Iron','Gold','Copper','Silver']},ans:0,sub:'Kimia',type:'quiz'},
 {q:{id:'pH larutan asam adalah?',en:'pH of an acidic solution?'},opts:{id:['Kurang dari 7','Lebih dari 7','Sama dengan 7','Sama dengan 14'],en:['Less than 7','More than 7','Equal to 7','Equal to 14']},ans:0,sub:'Kimia',type:'quiz'},
@@ -215,15 +227,15 @@ const quizBank = [
 {q:{id:'Ibu kota Kalimantan Timur?',en:'Capital of East Kalimantan?'},opts:{id:['Samarinda','Balikpapan','Tarakan','Bontang'],en:['Samarinda','Balikpapan','Tarakan','Bontang']},ans:0,sub:'Tebak Kota',type:'place'},
 ];
 
-const STATE = {LOADING:'loading',LOBBY:'lobby',CHAR:'char',LEVEL:'level',PLAYING:'playing',QUIZ:'quiz',GAMEOVER:'gameover',PAUSE:'pause',MISSION:'mission'};
-let currentState = STATE.LOADING;
-let currentLevel=1, player, platforms=[], movingPlatforms=[], enemies=[], hazards=[], powerups=[], playerProjectiles=[], questionBlocks=[], pipes=[], stairs=[];
-let exitDoor={}, bossObj=null, weaponPickup=null, playerHasWeapon=false, bossDefeated=false;
-let lives=3, score=0, levelScore=0, gameLoopId=null, keys={};
-let mobileLeft=false, mobileRight=false, mobileJump=false;
-let cameraX=0, gameTime=0;
-let levelUnlocked=Array(TOTAL_LEVELS).fill(false), levelStars=Array(TOTAL_LEVELS).fill(0);
-let coins=0, totalScore=0, playerName='Player1', volume=70, themeUI='dark', bgIndex=1;
+const STATE={LOADING:'loading',LOBBY:'lobby',CHAR:'char',LEVEL:'level',PLAYING:'playing',QUIZ:'quiz',GAMEOVER:'gameover',PAUSE:'pause',MISSION:'mission'};
+let currentState=STATE.LOADING;
+let currentLevel=1,player,platforms=[],movingPlatforms=[],enemies=[],hazards=[],powerups=[],playerProjectiles=[],questionBlocks=[],pipes=[],stairs=[];
+let exitDoor={},bossObj=null,weaponPickup=null,playerHasWeapon=false,bossDefeated=false;
+let lives=3,score=0,levelScore=0,gameLoopId=null,keys={};
+let mobileLeft=false,mobileRight=false,mobileJump=false;
+let cameraX=0,gameTime=0;
+let levelUnlocked=Array(TOTAL_LEVELS).fill(false),levelStars=Array(TOTAL_LEVELS).fill(0);
+let coins=0,totalScore=0,playerName='Player1',volume=70,themeUI='dark',bgIndex=1;
 let levelThemes=[];
 
 const bgNames=[
@@ -231,22 +243,13 @@ const bgNames=[
 {id:'🌋 Gunung Berapi',en:'🌋 Volcano'},{id:'🏔️ Pegunungan Salju',en:'🏔️ Snowy Mountains'},{id:'🌌 Galaksi',en:'🌌 Galaxy'},{id:'🎆 Festival',en:'🎆 Festival'},{id:'🌃 Malam Kota',en:'🌃 City Night'},
 {id:'🏝️ Pulau Tropis',en:'🏝️ Tropical Island'},{id:'🌠 Bintang Jatuh',en:'🌠 Shooting Star'},{id:'🎇 Aurora',en:'🎇 Aurora'},{id:'🌄 Lembah Hijau',en:'🌄 Green Valley'},{id:'☀️ Padang Rumput',en:'☀️ Meadow'}
 ];
-const getBgStyle = i => { let idx=(i-1+15)%15, hue=(idx*24)%360; return `linear-gradient(135deg,hsl(${hue},70%,55%),hsl(${(hue+40)%360},75%,45%))`; };
-const applyBackground = () => { document.getElementById('game-container').style.background = getBgStyle(bgIndex); };
-const applyTheme = () => {
-  if(themeUI==='light') document.getElementById('game-container').classList.add('light-theme');
-  else document.getElementById('game-container').classList.remove('light-theme');
-};
+const getBgStyle=i=>{let idx=(i-1+15)%15,hue=(idx*24)%360;return `linear-gradient(135deg,hsl(${hue},70%,55%),hsl(${(hue+40)%360},75%,45%))`;};
+const applyBackground=()=>{document.getElementById('game-container').style.background=getBgStyle(bgIndex);};
+const applyTheme=()=>{if(themeUI==='light')document.getElementById('game-container').classList.add('light-theme');else document.getElementById('game-container').classList.remove('light-theme');};
 
-const shuffleArray = arr => { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr; };
-const randomizeLevelThemes = () => {
-  const pool=['ice','lava','sky','mountain','cave','thorns'];
-  let themes=[];
-  for(let i=0;i<TOTAL_LEVELS-1;i++) themes.push(pool[i%pool.length]);
-  themes=shuffleArray(themes); themes.push('final');
-  levelThemes=themes;
-};
-const getWorldTheme = lv => levelThemes[lv-1]||'ice';
+const shuffleArray=arr=>{for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;};
+const randomizeLevelThemes=()=>{const pool=['ice','lava','sky','mountain','cave','thorns'];let themes=[];for(let i=0;i<TOTAL_LEVELS-1;i++)themes.push(pool[i%pool.length]);themes=shuffleArray(themes);themes.push('final');levelThemes=themes;};
+const getWorldTheme=lv=>levelThemes[lv-1]||'ice';
 
 const SKILLS=['Fireball','Double Jump','Shield','Speed','Invincible'];
 const questDescriptions=['Selesaikan 3 level','Kalahkan 1 Boss','Kumpulkan 200 koin','Selesaikan 5 kuis','Capai Level 10'];
@@ -268,71 +271,35 @@ const achievementsDef=[
   {id:'level10',desc:{id:'Capai Level 10',en:'Reach Level 10'},check:s=>s.maxLevel>=10},
   {id:'score1000',desc:{id:'Raih 1000 Score',en:'Reach 1000 Score'},check:s=>s.bestScore>=1000},
 ];
-let achievements=[], stats={kills:0,bossKills:0,totalCoins:0,quizCompleted:0,maxLevel:1,bestScore:0};
+let achievements=[],stats={kills:0,bossKills:0,totalCoins:0,quizCompleted:0,maxLevel:1,bestScore:0};
 
-const panels={
-  loading:document.getElementById('loading-screen'),lobby:document.getElementById('lobby-panel'),
-  char:document.getElementById('char-panel'),level:document.getElementById('level-panel'),
-  leaderboard:document.getElementById('leaderboard-panel'),achievements:document.getElementById('achievements-panel'),
-  settings:document.getElementById('settings-panel'),quiz:document.getElementById('quiz-panel'),
-  gameover:document.getElementById('gameover-panel'),pause:document.getElementById('pause-panel'),
-  mission:document.getElementById('mission-panel')
-};
+const panels={loading:document.getElementById('loading-screen'),lobby:document.getElementById('lobby-panel'),char:document.getElementById('char-panel'),level:document.getElementById('level-panel'),leaderboard:document.getElementById('leaderboard-panel'),achievements:document.getElementById('achievements-panel'),settings:document.getElementById('settings-panel'),quiz:document.getElementById('quiz-panel'),gameover:document.getElementById('gameover-panel'),pause:document.getElementById('pause-panel'),mission:document.getElementById('mission-panel')};
 const hideAllPanels=()=>Object.values(panels).forEach(p=>p.classList.remove('active'));
 const showPanel=p=>{hideAllPanels();if(p)p.classList.add('active');};
 const updatePauseBtn=()=>{pauseTrigger.style.display=currentState===STATE.PLAYING?'flex':'none';};
 
-const saveData=()=>{
-  try{localStorage.setItem('gbq_v9',JSON.stringify({levelUnlocked,levelStars,coins,totalScore,playerName,volume,currentLang,themeUI,bgIndex,charUnlocked:charData.map(c=>c.unlocked),achievements,stats,selectedCharId,levelThemes}));}catch(e){}
-};
+const saveData=()=>{try{localStorage.setItem('gbq_v9',JSON.stringify({levelUnlocked,levelStars,coins,totalScore,playerName,volume,currentLang,themeUI,bgIndex,charUnlocked:charData.map(c=>c.unlocked),achievements,stats,selectedCharId,levelThemes}));}catch(e){}};
 const loadData=()=>{
   try{
     const raw=localStorage.getItem('gbq_v9');
-    if(raw){
-      const d=JSON.parse(raw);
-      levelUnlocked=d.levelUnlocked||levelUnlocked; levelStars=d.levelStars||levelStars;
-      coins=d.coins||0; totalScore=d.totalScore||0; playerName=d.playerName||'Player1';
-      volume=d.volume||70; currentLang=d.currentLang||'id'; themeUI=d.themeUI||'dark'; bgIndex=d.bgIndex||1;
-      if(d.charUnlocked)charData.forEach((c,i)=>c.unlocked=d.charUnlocked[i]??c.unlocked);
-      achievements=d.achievements||[]; stats=d.stats||{kills:0,bossKills:0,totalCoins:0,quizCompleted:0,maxLevel:1,bestScore:0};
-      if(d.selectedCharId!=null)selectedCharId=d.selectedCharId;
-      if(d.levelThemes&&d.levelThemes.length===TOTAL_LEVELS)levelThemes=d.levelThemes;else randomizeLevelThemes();
-    }else randomizeLevelThemes();
+    if(raw){const d=JSON.parse(raw);levelUnlocked=d.levelUnlocked||levelUnlocked;levelStars=d.levelStars||levelStars;coins=d.coins||0;totalScore=d.totalScore||0;playerName=d.playerName||'Player1';volume=d.volume||70;currentLang=d.currentLang||'id';themeUI=d.themeUI||'dark';bgIndex=d.bgIndex||1;if(d.charUnlocked)charData.forEach((c,i)=>c.unlocked=d.charUnlocked[i]??c.unlocked);achievements=d.achievements||[];stats=d.stats||{kills:0,bossKills:0,totalCoins:0,quizCompleted:0,maxLevel:1,bestScore:0};if(d.selectedCharId!=null)selectedCharId=d.selectedCharId;if(d.levelThemes&&d.levelThemes.length===TOTAL_LEVELS)levelThemes=d.levelThemes;else randomizeLevelThemes();}else randomizeLevelThemes();
   }catch(e){randomizeLevelThemes();}
   levelUnlocked[0]=true;
   applyLanguage(currentLang);
-  document.getElementById('lang-select').value=currentLang; document.getElementById('theme-select').value=themeUI;
-  document.getElementById('vol-slider').value=volume; document.getElementById('input-name').value=playerName;
+  document.getElementById('lang-select').value=currentLang;document.getElementById('theme-select').value=themeUI;document.getElementById('vol-slider').value=volume;document.getElementById('input-name').value=playerName;
   applyBackground();applyTheme();updateCoinDisplays();
 };
 const getLeaderboard=()=>{try{return JSON.parse(localStorage.getItem('gbq_lb')||'[]');}catch(e){return[];}};
 const setLeaderboard=lb=>{try{localStorage.setItem('gbq_lb',JSON.stringify(lb));}catch(e){}};
-const addToLeaderboard=(name,scr)=>{
-  const lb=getLeaderboard();
-  const ex=lb.find(e=>e.name===name);
-  if(ex){if(scr>ex.score)ex.score=scr;}else lb.push({name,score:scr});
-  lb.sort((a,b)=>b.score-a.score);
-  setLeaderboard(lb.slice(0,5));
-};
+const addToLeaderboard=(name,scr)=>{const lb=getLeaderboard();const ex=lb.find(e=>e.name===name);if(ex){if(scr>ex.score)ex.score=scr;}else lb.push({name,score:scr});lb.sort((a,b)=>b.score-a.score);setLeaderboard(lb.slice(0,5));};
 
-class Player {
-  constructor(){
-    this.x=100;this.y=450;this.w=32;this.h=42;this.vx=0;this.vy=0;this.speed=4.2;this.jumpPower=-11;
-    this.onGround=false;this.doubleJumpUsed=false;this.skillType=charData[selectedCharId]?.skill||'Fireball';
-    this.invTimer=0;this.shieldActive=false;this.dashCd=0;this.dashTimer=0;this.facing=1;
-    this.attackCd=0;this.attackAnim=0;this.attackAngle=0;this.iceSlide=0;
-    this.isMoving=false;
-  }
+class Player{
+  constructor(){this.x=100;this.y=450;this.w=32;this.h=42;this.vx=0;this.vy=0;this.speed=4.2;this.jumpPower=-11;this.onGround=false;this.doubleJumpUsed=false;this.skillType=charData[selectedCharId]?.skill||'Fireball';this.invTimer=0;this.shieldActive=false;this.dashCd=0;this.dashTimer=0;this.facing=1;this.attackCd=0;this.attackAnim=0;this.attackAngle=0;this.iceSlide=0;this.isMoving=false;}
   update(theme){
     if(this.invTimer>0)this.invTimer--;if(this.dashCd>0)this.dashCd--;if(this.attackCd>0)this.attackCd--;
     if(this.attackAnim>0){this.attackAnim--;this.attackAngle+=0.35;}
     if(this.dashTimer>0){this.dashTimer--;this.vx=12*this.facing;if(this.dashTimer<=0)this.vx=0;}
-    else{
-      let move=0;if(keys['ArrowLeft']||keys['a']||mobileLeft)move=-1;if(keys['ArrowRight']||keys['d']||mobileRight)move=1;
-      const spd=this.skillType==='Speed'?this.speed*1.6:this.speed;
-      if(theme==='ice'){this.iceSlide+=(move*spd-this.iceSlide)*0.08;this.vx=this.iceSlide;}
-      else this.vx=move*spd;
-    }
+    else{let move=0;if(keys['ArrowLeft']||keys['a']||mobileLeft)move=-1;if(keys['ArrowRight']||keys['d']||mobileRight)move=1;const spd=this.skillType==='Speed'?this.speed*1.6:this.speed;if(theme==='ice'){this.iceSlide+=(move*spd-this.iceSlide)*0.08;this.vx=this.iceSlide;}else this.vx=move*spd;}
     this.isMoving=Math.abs(this.vx)>0.5;
     if(this.vx>0)this.facing=1;else if(this.vx<0)this.facing=-1;
     const jump=keys[' ']||keys['ArrowUp']||keys['w']||mobileJump;
@@ -343,20 +310,17 @@ class Player {
     if(this.y>700){lives--;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}else{respawnPlayer();}}
   }
   dash(){if(this.dashCd<=0&&this.dashTimer<=0){this.dashTimer=10;this.dashCd=45;}}
-  attack(){
-    if(!playerHasWeapon||this.attackCd>0)return;
-    this.attackCd=22;this.attackAnim=14;this.attackAngle=0;
-    const theme=getWorldTheme(currentLevel);
-    const weapEmoji=THEME_CFG[theme]?.weapEmoji||'🗡️';
-    playerProjectiles.push({x:this.x+this.w/2,y:this.y+this.h/2-8,vx:this.facing*8.5,vy:-1.5,emoji:weapEmoji,active:true,damage:1});
-  }
+  attack(){if(!playerHasWeapon||this.attackCd>0)return;this.attackCd=22;this.attackAnim=14;this.attackAngle=0;const theme=getWorldTheme(currentLevel);const weapEmoji=THEME_CFG[theme]?.weapEmoji||'🗡️';playerProjectiles.push({x:this.x+this.w/2,y:this.y+this.h/2-8,vx:this.facing*8.5,vy:-1.5,emoji:weapEmoji,active:true,damage:1});}
 }
 const respawnPlayer=()=>{if(!player)return;player.x=100;player.y=400;player.vy=0;player.vx=0;player.invTimer=80;};
 
 const seededR=(seed)=>{let s=(seed*1664525+1013904223)|0;return()=>{s=(s*1664525+1013904223)|0;return((s>>>0)/4294967296);};};
 
+// Helper: check if a range [ax, ax+aw] overlaps pipe exclusion zone with margin
+const overlapsAnyPipe=(ax,aw,margin)=>pipes.some(p=>ax+aw>p.x-margin&&ax<p.x+p.w+margin);
+
 // =============================================
-// FIXED generateLevel: pipe spacing, question block spacing, more varied platforms
+// FIXED generateLevel: generate pipes FIRST, then avoid overlaps for all other elements
 // =============================================
 const generateLevel=(lv)=>{
   platforms=[];movingPlatforms=[];enemies=[];hazards=[];powerups=[];playerProjectiles=[];questionBlocks=[];pipes=[];stairs=[];
@@ -364,46 +328,58 @@ const generateLevel=(lv)=>{
   hideBossHpBar();hideWeaponHud();hideBossMsg();
   const rnd=seededR(lv*31337+7919);const theme=getWorldTheme(lv);const diff=Math.min(Math.floor((lv-1)/5),4);
 
-  // Ground segments
-  let gx=0;const groundSegs=[];groundSegs.push({x:0,w:350});gx=350;
+  // STEP 1: Generate pipes FIRST so other elements can avoid them
+  // FIX: pipes get bigger spacing + clear gap between them
+  for(let i=0;i<4;i++){const px=480+i*700;pipes.push({x:px,y:GROUND_Y-70,w:60,h:90});}
+
+  // STEP 2: Ground segments
+  // FIX: small gaps even at level 1 to create holes + avoid pipe gaps
+  let gx=0;const groundSegs=[];groundSegs.push({x:0,w:380});gx=380;
   while(gx<WORLD_WIDTH-400){
-    const gapW=diff===0?0:Math.min(50+diff*35+rnd()*60,240);gx+=gapW;
+    // FIX: even diff=0 gets occasional holes (30% chance of 35-50px gap)
+    const gapW=diff===0?(rnd()<0.3?35+rnd()*15:0):Math.min(55+diff*35+rnd()*65,260);
+    gx+=gapW;
     if(gx>=WORLD_WIDTH-400)break;
-    const segW=160+rnd()*200;const actual=Math.min(segW,WORLD_WIDTH-400-gx);
+    const segW=150+rnd()*200;const actual=Math.min(segW,WORLD_WIDTH-400-gx);
     groundSegs.push({x:gx,w:actual});gx+=actual;
   }
   groundSegs.push({x:WORLD_WIDTH-380,w:380});
   for(const seg of groundSegs)platforms.push({x:seg.x,y:GROUND_Y,w:seg.w,h:20,isGround:true});
 
-  // FIXED: More varied elevated platforms, better distribution
-  const heights=[470,440,400,360,320,280,250];
+  // STEP 3: Elevated platforms - AVOID pipe zones
+  const heights=[470,440,400,360,320,280,250,210];
   let lastX=200;
-  const numPlats=12+lv;
+  const numPlats=14+lv;
   for(let i=0;i<numPlats;i++){
-    const gap=90+rnd()*190;const px=lastX+gap;
+    const gap=80+rnd()*180;let px=lastX+gap;
     if(px>=WORLD_WIDTH-500)break;
+    // FIX: Skip if this platform overlaps pipe exclusion zone (100px margin each side)
+    if(overlapsAnyPipe(px,100+rnd()*120,100)){lastX=px+100+rnd()*80;i--;if(i<-5)break;continue;}
     const py=heights[Math.floor(rnd()*Math.min(4+diff,heights.length))];
-    const pw=85+rnd()*130;
+    const pw=80+rnd()*120;
     platforms.push({x:px,y:py,w:pw,h:15,isGround:false});
-    if(theme==='thorns'&&rnd()<0.45&&pw>80){
-      const ts=px+12;const tw=pw-28;
-      hazards.push({x:ts,y:py-14,w:tw,h:14,type:'spike'});
-    }
+    if(theme==='thorns'&&rnd()<0.45&&pw>80){hazards.push({x:px+12,y:py-14,w:pw-28,h:14,type:'spike'});}
     lastX=px+pw;
   }
 
-  // FIXED: Better question block spacing (no clusters)
-  for(let i=0;i<8;i++) questionBlocks.push({x:350+i*360+rnd()*90,y:270+rnd()*190,w:40,h:40,hit:false});
+  // STEP 4: Stairs - AVOID pipe zones
+  for(let i=0;i<3;i++){
+    let sx=600+i*950;
+    // FIX: Shift stairs away from pipes if overlapping
+    for(const p of pipes){if(sx+160>p.x-60&&sx<p.x+p.w+60){sx=p.x+p.w+80;}}
+    if(sx>=WORLD_WIDTH-400)continue;
+    stairs.push({x:sx,y:GROUND_Y-50,w:150,h:18});
+    stairs.push({x:sx+40,y:GROUND_Y-110,w:110,h:18});
+    stairs.push({x:sx+80,y:GROUND_Y-170,w:70,h:18});
+  }
 
-  // FIXED: Fewer pipes, wider spacing (was 5 with i*480, now 4 with i*720)
-  for(let i=0;i<4;i++){const px=420+i*720;pipes.push({x:px,y:GROUND_Y-70,w:60,h:90});}
-
-  // Stairs (fewer, well spaced)
-  for(let i=0;i<3;i++){const sx=700+i*900;stairs.push({x:sx,y:GROUND_Y-50,w:150,h:18});stairs.push({x:sx+40,y:GROUND_Y-110,w:110,h:18});stairs.push({x:sx+80,y:GROUND_Y-170,w:70,h:18});}
-
-  // Hazards (spikes on ground)
+  // STEP 5: Ground hazards (spikes) - avoid pipes too
   const numH=3+diff*2;
-  for(let i=0;i<numH;i++){const hx=500+Math.floor(i*(WORLD_WIDTH-1100)/numH)+rnd()*120;hazards.push({x:hx,y:GROUND_Y-16,w:36,h:16,type:'spike'});}
+  for(let i=0;i<numH;i++){
+    const hx=500+Math.floor(i*(WORLD_WIDTH-1100)/numH)+rnd()*120;
+    // Don't place spikes under pipes
+    if(!overlapsAnyPipe(hx,36,50)){hazards.push({x:hx,y:GROUND_Y-16,w:36,h:16,type:'spike'});}
+  }
   if(theme==='lava'){
     for(let i=0;i<groundSegs.length-1;i++){
       const cur=groundSegs[i],nxt=groundSegs[i+1];const gapStart=cur.x+cur.w,gapEnd=nxt.x;
@@ -411,25 +387,37 @@ const generateLevel=(lv)=>{
     }
   }
 
-  // Enemies on ground segments only
+  // STEP 6: Question blocks - AVOID pipe zones (150px margin)
+  for(let i=0;i<8;i++){
+    const qx=350+i*360+rnd()*90;
+    const qy=260+rnd()*200;
+    // FIX: Skip question block if too close to any pipe
+    if(!overlapsAnyPipe(qx,40,150)){questionBlocks.push({x:qx,y:qy,w:40,h:40,hit:false});}
+  }
+
+  // STEP 7: Enemies - on ground only, patrol won't cross pipes
   for(let i=0;i<5+Math.floor(lv*1.5);i++){
     const ex=450+Math.floor(i*(WORLD_WIDTH-800)/(5+Math.floor(lv*1.5)))+rnd()*80;
-    const seg=groundSegs.find(s=>ex>=s.x&&ex<=s.x+s.w);
-    const ey=seg?GROUND_Y-35:GROUND_Y-35;
-    // FIXED: patrol bounds respect pipe positions — set patrol range that won't overlap pipes
+    // Find patrol bounds that don't cross any pipe
     let pLeft=ex-80,pRight=ex+100;
-    enemies.push({x:ex,y:ey,w:34,h:34,type:'walker',dir:1,alive:true,hp:1+(lv>12?1:0),emoji:THEME_CFG[theme].enemyEmoji,patrolLeft:pLeft,patrolRight:pRight});
+    for(const p of pipes){
+      if(ex<p.x&&pRight>p.x-20)pRight=p.x-25;
+      if(ex>p.x+p.w&&pLeft<p.x+p.w+20)pLeft=p.x+p.w+25;
+    }
+    if(pRight>pLeft+20){enemies.push({x:ex,y:GROUND_Y-35,w:34,h:34,type:'walker',dir:1,alive:true,hp:1+(lv>12?1:0),emoji:THEME_CFG[theme].enemyEmoji,patrolLeft:pLeft,patrolRight:pRight});}
   }
-  // Enemies near pipes — only patrol in front of the pipe, not through it
+  // Pipe guards - patrol only on the left side of pipe (away from pipe body)
   for(const p of pipes){
-    enemies.push({x:p.x-80,y:p.y-35,w:34,h:34,type:'walker',dir:1,alive:true,hp:1,emoji:'👾',patrolLeft:p.x-120,patrolRight:p.x-10});
+    if(p.x-130>100){
+      enemies.push({x:p.x-90,y:GROUND_Y-35,w:34,h:34,type:'walker',dir:-1,alive:true,hp:1,emoji:'👾',patrolLeft:p.x-150,patrolRight:p.x-30});
+    }
   }
 
   powerups=[
-    {x:300,y:GROUND_Y-40,w:24,h:24,type:'coin',active:true},
-    {x:1100,y:400,w:24,h:24,type:'heart',active:true},
-    {x:1900,y:360,w:24,h:24,type:'coin',active:true},
-    {x:2600,y:GROUND_Y-40,w:24,h:24,type:'heart',active:true}
+    {x:350,y:GROUND_Y-40,w:24,h:24,type:'coin',active:true},
+    {x:1200,y:400,w:24,h:24,type:'heart',active:true},
+    {x:2000,y:360,w:24,h:24,type:'coin',active:true},
+    {x:2700,y:GROUND_Y-40,w:24,h:24,type:'heart',active:true}
   ];
   weaponPickup={x:WORLD_WIDTH-520,y:GROUND_Y-55,w:44,h:44,active:true,emoji:THEME_CFG[theme].weapEmoji,name:THEME_CFG[theme].weapName};
   const bossHp=6+diff*4+(lv===25?10:0);
@@ -444,21 +432,10 @@ const updateBoss=()=>{
   b.x+=b.dir*spd;if(b.x<WORLD_WIDTH-420||b.x>WORLD_WIDTH-160)b.dir*=-1;
   b.y=GROUND_Y-b.h;
   b.shootTimer++;const intv=b.phase===2?Math.max(20,b.shootInterval-20):b.shootInterval;
-  if(b.shootTimer>=intv&&player){
-    b.shootTimer=0;const dx=player.x-b.x,dy=player.y-b.y;const dist=Math.sqrt(dx*dx+dy*dy)||1;const spd2=5+b.phase;
-    b.projectiles.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:(dx/dist)*spd2,vy:(dy/dist)*spd2,active:true});
-    if(b.phase===2)b.projectiles.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:(dx/dist)*spd2+1.5,vy:(dy/dist)*spd2,active:true});
-  }
-  b.projectiles.forEach(p=>{
-    p.x+=p.vx;p.y+=p.vy;
-    if(p.x<0||p.x>WORLD_WIDTH||p.y>700||p.y<0)p.active=false;
-    if(p.active&&player&&player.invTimer<=0&&!player.shieldActive&&p.x<player.x+player.w&&p.x+10>player.x&&p.y<player.y+player.h&&p.y+10>player.y){p.active=false;lives--;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}}
-  });
+  if(b.shootTimer>=intv&&player){b.shootTimer=0;const dx=player.x-b.x,dy=player.y-b.y;const dist=Math.sqrt(dx*dx+dy*dy)||1;const spd2=5+b.phase;b.projectiles.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:(dx/dist)*spd2,vy:(dy/dist)*spd2,active:true});if(b.phase===2)b.projectiles.push({x:b.x+b.w/2,y:b.y+b.h/2,vx:(dx/dist)*spd2+1.5,vy:(dy/dist)*spd2,active:true});}
+  b.projectiles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>WORLD_WIDTH||p.y>700||p.y<0)p.active=false;if(p.active&&player&&player.invTimer<=0&&!player.shieldActive&&p.x<player.x+player.w&&p.x+10>player.x&&p.y<player.y+player.h&&p.y+10>player.y){p.active=false;lives--;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}}});
   b.projectiles=b.projectiles.filter(p=>p.active);
-  for(let i=playerProjectiles.length-1;i>=0;i--){
-    const proj=playerProjectiles[i];if(!proj.active)continue;
-    if(proj.x>b.x&&proj.x<b.x+b.w&&proj.y>b.y&&proj.y<b.y+b.h){b.hp-=proj.damage;b.hitFlash=8;proj.active=false;levelScore+=20;score+=20;}
-  }
+  for(let i=playerProjectiles.length-1;i>=0;i--){const proj=playerProjectiles[i];if(!proj.active)continue;if(proj.x>b.x&&proj.x<b.x+b.w&&proj.y>b.y&&proj.y<b.y+b.h){b.hp-=proj.damage;b.hitFlash=8;proj.active=false;levelScore+=20;score+=20;}}
   if(b.hp<=0){b.alive=false;bossDefeated=true;exitDoor.open=true;stats.bossKills++;levelScore+=200;score+=200;coins+=50;stats.totalCoins+=50;updateCoinDisplays();hideBossHpBar();showBossMsg(currentLang==='id'?'🎉 Boss dikalahkan! Masuki pintu!':'🎉 Boss defeated! Enter the door!');setTimeout(hideBossMsg,2500);}
   document.getElementById('boss-hp-inner').style.width=Math.max(0,(b.hp/b.maxHp*100))+'%';
   document.getElementById('boss-hp-label').textContent=`${b.emoji} BOSS HP: ${Math.max(0,b.hp)}/${b.maxHp}`;
@@ -471,12 +448,12 @@ const showBossMsg=(msg)=>{document.getElementById('boss-msg').innerHTML=msg;docu
 const hideBossMsg=()=>{document.getElementById('boss-msg').style.display='none';};
 
 // =============================================
-// FIXED updateGame: pipe/block collisions, enemy pipe avoidance
+// FIXED updateGame
 // =============================================
 const updateGame=()=>{
   if(!player)return;gameTime++;const theme=getWorldTheme(currentLevel);player.update(theme);
 
-  // FIXED: allP uses correct pipe cap y (p.y-20 = cap top) and includes question blocks as solid
+  // allP: correct pipe cap y + question blocks solid
   const allP=[
     ...platforms,
     ...stairs,
@@ -486,7 +463,7 @@ const updateGame=()=>{
 
   player.onGround=false;
 
-  // Landing collision (from above / falling)
+  // Landing collision
   for(const p of allP){
     if(player.x+player.w>p.x+3&&player.x<p.x+p.w-3&&player.y+player.h>p.y&&player.y+player.h<p.y+p.h+18&&player.vy>=0&&player.y+player.h-player.vy<=p.y+10){
       player.y=p.y-player.h;player.vy=0;player.onGround=true;
@@ -500,63 +477,59 @@ const updateGame=()=>{
     }
   }
 
-  // FIXED: Question block — ceiling hit (from below triggers block) + side collision
+  // Question block ceiling + side collision
   for(const qb of questionBlocks){
-    const px=player.x,pw=player.x+player.w,py=player.y,ph=player.y+player.h;
+    const px=player.x,pw_=player.x+player.w,py=player.y,ph=player.y+player.h;
     const qx=qb.x,qw=qb.x+qb.w,qy=qb.y,qh=qb.y+qb.h;
-    if(pw-4>qx&&px+4<qw){
-      // Ceiling: player head hits block bottom while jumping
-      if(py<=qh+1&&py>=qy-2&&player.vy<0){
-        player.y=qh;player.vy=1;
-        if(!qb.hit){
-          qb.hit=true;
-          const reward=Math.random()<0.7?{type:'coin'}:{type:'heart'};
-          powerups.push({x:qb.x+5,y:qb.y-30,w:24,h:24,type:reward.type,active:true,vy:-5});
-        }
-      }
-      // Side collision with question block
-      if(ph>qy+5&&py<qh-5){
-        if(pw>qx+2&&pw<=qw&&player.vx>0){player.x=qx-player.w;player.vx=0;}
-        else if(px<qw-2&&px>=qx&&player.vx<0){player.x=qw;player.vx=0;}
-      }
+    if(pw_-4>qx&&px+4<qw){
+      if(py<=qh+1&&py>=qy-2&&player.vy<0){player.y=qh;player.vy=1;if(!qb.hit){qb.hit=true;const reward=Math.random()<0.7?{type:'coin'}:{type:'heart'};powerups.push({x:qb.x+5,y:qb.y-30,w:24,h:24,type:reward.type,active:true,vy:-5});}}
+      if(ph>qy+5&&py<qh-5){if(pw_>qx+2&&pw_<=qw&&player.vx>0){player.x=qx-player.w;player.vx=0;}else if(px<qw-2&&px>=qx&&player.vx<0){player.x=qw;player.vx=0;}}
     }
   }
 
-  // FIXED: Pipe body side collision (player can't walk through pipe body)
+  // FIX 3: PIPE SIDE COLLISION - robust overlap-based resolution
   for(const p of pipes){
-    const pBodyY=p.y, pBodyH=p.h;
-    const pCapL=p.x-5, pCapR=p.x+p.w+5;
-    if(player.y+player.h>pBodyY+8&&player.y<pBodyY+pBodyH){
-      if(player.x+player.w>pCapL+5&&player.x+player.w<pCapR&&player.vx>0&&player.x<pCapL+10){
-        player.x=pCapL-player.w;player.vx=0;
-      }else if(player.x<pCapR-5&&player.x>pCapL&&player.vx<0&&player.x+player.w>pCapR-10){
-        player.x=pCapR;player.vx=0;
+    const pL=p.x-5, pR=p.x+p.w+5;
+    const pCapY=p.y-20, pBotY=p.y+p.h;
+    // Check full vertical overlap (from cap top to pipe bottom)
+    const vertOk=player.y+player.h>pCapY+4&&player.y<pBotY;
+    const horizOk=player.x+player.w>pL&&player.x<pR;
+    if(vertOk&&horizOk){
+      // Don't resolve if player just landed on cap (handled by allP)
+      const onCap=player.onGround&&player.y+player.h<=pCapY+3;
+      if(!onCap){
+        // Use minimum overlap to determine push direction
+        const overlapL=(player.x+player.w)-pL;
+        const overlapR=pR-player.x;
+        if(overlapL<=overlapR){player.x=pL-player.w;if(player.vx>0)player.vx=0;}
+        else{player.x=pR;if(player.vx<0)player.vx=0;}
       }
     }
   }
 
-  // FIXED: Enemy update with pipe avoidance
+  // FIX 4: Enemy update with pipe avoidance + FIX: enemies affected by spikes/lava
   for(const e of enemies){
     if(!e.alive)continue;
     let onPlat=false;
-    for(const p of allP){
-      if(e.x+e.w>p.x+2&&e.x<p.x+p.w-2&&e.y+e.h>=p.y-2&&e.y+e.h<=p.y+18){onPlat=true;e.y=p.y-e.h;break;}
-    }
-    if(!onPlat){e.y+=3.5;if(e.y>700)e.alive=false;}
+    for(const p of allP){if(e.x+e.w>p.x+2&&e.x<p.x+p.w-2&&e.y+e.h>=p.y-2&&e.y+e.h<=p.y+18){onPlat=true;e.y=p.y-e.h;break;}}
+    if(!onPlat){e.y+=3.5;if(e.y>700){e.alive=false;continue;}}
     else{
       if(e.patrolLeft!==undefined){
-        // FIXED: Check if next step would walk INTO a pipe — if so reverse
         const nx=e.x+e.dir*1.5;
-        let blockedByPipe=false;
-        for(const pp of pipes){
-          if(nx+e.w>pp.x-3&&nx<pp.x+pp.w+3&&e.y+e.h>pp.y-5){blockedByPipe=true;break;}
-        }
-        if(blockedByPipe)e.dir*=-1;
+        let blocked=false;
+        for(const pp of pipes){if(nx+e.w>pp.x-3&&nx<pp.x+pp.w+3&&e.y+e.h>pp.y-5){blocked=true;break;}}
+        if(blocked)e.dir*=-1;
         e.x+=e.dir*1.5;
         if(e.x<=e.patrolLeft||e.x>=e.patrolRight)e.dir*=-1;
       }
     }
+    // FIX 2: Enemy dies from spikes/lava (no more clipping through hazards)
+    for(const h of hazards){
+      if(e.x+e.w>h.x&&e.x<h.x+h.w&&e.y+e.h>h.y&&e.y<h.y+h.h){e.alive=false;break;}
+    }
   }
+  // Remove dead enemies
+  for(let i=enemies.length-1;i>=0;i--){if(!enemies[i].alive)enemies.splice(i,1);}
 
   // Projectile update
   for(let i=playerProjectiles.length-1;i>=0;i--){
@@ -575,21 +548,14 @@ const updateGame=()=>{
     }
   }
 
-  // Hazards
+  // Hazards (player)
   for(const h of hazards){
     if(h.type==='lava'&&player.x+player.w>h.x&&player.x<h.x+h.w&&player.y+player.h>h.y&&player.y<h.y+h.h){if(player.invTimer<=0&&!player.shieldActive){lives-=lives;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}else respawnPlayer();}}
     else if(player.x+player.w>h.x&&player.x<h.x+h.w&&player.y+player.h>h.y&&player.y<h.y+h.h){if(player.invTimer<=0&&!player.shieldActive){lives--;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}else respawnPlayer();}}
   }
 
   // Powerups
-  for(const pw of powerups){
-    if(!pw.active)continue;
-    if(player.x+player.w>pw.x&&player.x<pw.x+pw.w&&player.y+player.h>pw.y&&player.y<pw.y+pw.h){
-      pw.active=false;
-      if(pw.type==='coin'){coins+=20;stats.totalCoins+=20;levelScore+=20;score+=20;updateCoinDisplays();}
-      else if(pw.type==='heart')lives=Math.min(lives+1,5);
-    }
-  }
+  for(const pw of powerups){if(!pw.active)continue;if(player.x+player.w>pw.x&&player.x<pw.x+pw.w&&player.y+player.h>pw.y&&player.y<pw.y+pw.h){pw.active=false;if(pw.type==='coin'){coins+=20;stats.totalCoins+=20;levelScore+=20;score+=20;updateCoinDisplays();}else if(pw.type==='heart')lives=Math.min(lives+1,5);}}
 
   // Weapon pickup
   if(weaponPickup&&weaponPickup.active&&player.x+player.w>weaponPickup.x&&player.x<weaponPickup.x+weaponPickup.w&&player.y+player.h>weaponPickup.y&&player.y<weaponPickup.y+weaponPickup.h){
@@ -605,30 +571,18 @@ const updateGame=()=>{
 };
 
 function drawCharacter(x,y,w,h,color,facing,isMoving,onGround,invTimer){
-  // Invincibility blink
   if(invTimer!==undefined&&invTimer>0&&Math.floor(invTimer/5)%2===0)return;
-  // Body
-  ctx.fillStyle=color;
-  ctx.fillRect(x+8,y+14,w-16,h-20);
-  // Head
-  ctx.fillStyle='#f1c40f';
-  ctx.beginPath();ctx.arc(x+w/2,y+8,10,0,Math.PI*2);ctx.fill();
-  // Eye
-  ctx.fillStyle='#000';
-  const eyeX=facing>0?x+w/2+3:x+w/2-7;
-  ctx.fillRect(eyeX,y+4,4,5);
-  // Legs with walk animation
+  ctx.fillStyle=color;ctx.fillRect(x+8,y+14,w-16,h-20);
+  ctx.fillStyle='#f1c40f';ctx.beginPath();ctx.arc(x+w/2,y+8,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';const eyeX=facing>0?x+w/2+3:x+w/2-7;ctx.fillRect(eyeX,y+4,4,5);
   const swing=(isMoving&&onGround)?Math.sin(gameTime*0.25)*7:0;
   ctx.fillStyle='#2c3e50';
   ctx.save();ctx.translate(x+10,y+h-8);ctx.rotate(swing*0.12);ctx.fillRect(-4,0,8,10);ctx.restore();
   ctx.save();ctx.translate(x+w-10,y+h-8);ctx.rotate(-swing*0.12);ctx.fillRect(-4,0,8,10);ctx.restore();
-  // Arms with swing
   ctx.fillStyle=color;
   ctx.save();ctx.translate(x+4,y+20);ctx.rotate(-swing*0.08);ctx.fillRect(-4,-4,8,14);ctx.restore();
   ctx.save();ctx.translate(x+w-4,y+20);ctx.rotate(swing*0.08);ctx.fillRect(-4,-4,8,14);ctx.restore();
-  // Shoes
-  ctx.fillStyle='#8b4513';
-  ctx.fillRect(x+4,y+h-6,12,6);ctx.fillRect(x+w-16,y+h-6,12,6);
+  ctx.fillStyle='#8b4513';ctx.fillRect(x+4,y+h-6,12,6);ctx.fillRect(x+w-16,y+h-6,12,6);
 }
 
 const renderGame=()=>{
@@ -641,64 +595,33 @@ const renderGame=()=>{
   drawBgDecor(theme);
   ctx.save();ctx.translate(-cameraX,0);
   if(theme==='lava'){ctx.fillStyle=`rgba(255,100,0,${0.2+0.1*Math.sin(gameTime*0.05)})`;ctx.fillRect(cameraX,GROUND_Y+20,canvas.width,100);}
-  // Platforms
   for(const p of platforms){ctx.fillStyle=tc.platColor;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=tc.platTop;ctx.fillRect(p.x,p.y,p.w,5);}
-  // Question blocks
   for(const qb of questionBlocks){
     ctx.fillStyle=qb.hit?'#8a6f3d':'#f1c40f';ctx.fillRect(qb.x,qb.y,qb.w,qb.h);
-    // Border
     ctx.strokeStyle=qb.hit?'#6a5a2d':'#cc9900';ctx.lineWidth=2;ctx.strokeRect(qb.x+1,qb.y+1,qb.w-2,qb.h-2);
     if(!qb.hit){ctx.fillStyle='#fff';ctx.font='bold 26px Arial';ctx.fillText('?',qb.x+11,qb.y+31);}
   }
-  // Pipes
   for(const p of pipes){
     ctx.fillStyle='#2ecc71';ctx.fillRect(p.x,p.y,p.w,p.h);
-    // Pipe top cap (wider)
     ctx.fillStyle='#27ae60';ctx.fillRect(p.x-5,p.y-20,p.w+10,22);
-    // Pipe highlight
-    ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x+4,p.y,8,p.h);
-    ctx.fillRect(p.x-3,p.y-20,5,22);
+    ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x+4,p.y,8,p.h);ctx.fillRect(p.x-3,p.y-20,5,22);
   }
-  // Stairs
   ctx.fillStyle='#8d5524';for(const s of stairs)ctx.fillRect(s.x,s.y,s.w,s.h);
-  // Hazards
   for(const h of hazards){
     if(h.type==='spike'){const sc={ice:'#90d8f0',lava:'#ff4400',sky:'#8898a8',mountain:'#909080',cave:'#554433',thorns:'#40701a',final:'#cc8800'}[theme]||'#aaa';drawSpike(h.x,h.y,h.w,h.h,sc);}
     else if(h.type==='lava'){const pulse=0.15*Math.sin(gameTime*0.08+h.x*0.01);ctx.fillStyle=`rgba(255,${60+Math.floor(pulse*60)},0,0.95)`;ctx.fillRect(h.x,h.y,h.w,h.h);ctx.fillStyle=`rgba(255,200,0,${0.4+pulse})`;ctx.fillRect(h.x,h.y,h.w,5);}
   }
-  // Powerups
   ctx.font='22px serif';
   for(const pw of powerups){if(!pw.active)continue;ctx.fillText(pw.type==='coin'?'🪙':'❤️',pw.x,pw.y+20);}
   if(weaponPickup&&weaponPickup.active){ctx.font='34px serif';ctx.fillText(weaponPickup.emoji,weaponPickup.x,weaponPickup.y+36);}
-  // Enemies
   ctx.font='28px serif';
-  for(const e of enemies){
-    if(!e.alive)continue;
-    ctx.save();
-    if(e.dir<0){ctx.translate(e.x+e.w,e.y);ctx.scale(-1,1);ctx.fillText(e.emoji,0,e.h);}
-    else ctx.fillText(e.emoji,e.x,e.y+e.h);
-    ctx.restore();
-  }
-  // Boss
-  if(bossObj&&bossObj.alive){
-    const b=bossObj;ctx.save();
-    if(b.hitFlash%4<2)ctx.filter='brightness(3)';
-    ctx.font='62px serif';
-    if(b.dir<0){ctx.translate(b.x+b.w,b.y);ctx.scale(-1,1);ctx.fillText(b.emoji,0,b.h);}
-    else ctx.fillText(b.emoji,b.x-5,b.y+b.h);
-    ctx.filter='none';ctx.restore();
-    ctx.font='16px serif';
-    for(const proj of b.projectiles)ctx.fillText('🔴',proj.x-8,proj.y+8);
-  }
-  // Door
+  for(const e of enemies){if(!e.alive)continue;ctx.save();if(e.dir<0){ctx.translate(e.x+e.w,e.y);ctx.scale(-1,1);ctx.fillText(e.emoji,0,e.h);}else ctx.fillText(e.emoji,e.x,e.y+e.h);ctx.restore();}
+  if(bossObj&&bossObj.alive){const b=bossObj;ctx.save();if(b.hitFlash%4<2)ctx.filter='brightness(3)';ctx.font='62px serif';if(b.dir<0){ctx.translate(b.x+b.w,b.y);ctx.scale(-1,1);ctx.fillText(b.emoji,0,b.h);}else ctx.fillText(b.emoji,b.x-5,b.y+b.h);ctx.filter='none';ctx.restore();ctx.font='16px serif';for(const proj of b.projectiles)ctx.fillText('🔴',proj.x-8,proj.y+8);}
   drawDoor(exitDoor,theme);
-  // Player
   drawCharacter(player.x,player.y,player.w,player.h,charData[selectedCharId].color,player.facing,player.isMoving,player.onGround,player.invTimer);
-  // Player projectiles
   ctx.font='20px serif';
   for(const proj of playerProjectiles){if(!proj.active)continue;ctx.fillText(proj.emoji,proj.x-10,proj.y+10);}
   ctx.restore();
-  // HUD
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(8,8,270,42);
   ctx.fillStyle='white';ctx.font='bold 17px sans-serif';
   ctx.fillText(`❤️ ${lives}  🪙 ${coins}  ⭐ ${levelScore}`,18,34);
@@ -727,21 +650,14 @@ const buildCharGrid=()=>{
     const card=document.createElement('div');
     card.className='char-card'+(c.unlocked?'':' locked')+(selectedCharId===c.id?' selected':'');
     card.innerHTML=`<canvas width="50" height="50" class="char-icon"></canvas><div><b>${c.name}</b></div><small>${c.skill}</small>`;
-    if(!c.unlocked){
-      if(c.unlockMethod==='coin')card.innerHTML+=`<br><small>🔒 ${c.price}🪙</small>`;
-      else card.innerHTML+=`<br><small>📜 Quest</small><div class="quest-tooltip">${c.questDesc}</div>`;
-    }
-    card.onclick=()=>{
-      if(!c.unlocked){if(c.unlockMethod==='coin'&&coins>=c.price){coins-=c.price;c.unlocked=true;saveData();updateCoinDisplays();buildCharGrid();}}
-      else{selectedCharId=c.id;saveData();buildCharGrid();}
-    };
+    if(!c.unlocked){if(c.unlockMethod==='coin')card.innerHTML+=`<br><small>🔒 ${c.price}🪙</small>`;else card.innerHTML+=`<br><small>📜 Quest</small><div class="quest-tooltip">${c.questDesc}</div>`;}
+    card.onclick=()=>{if(!c.unlocked){if(c.unlockMethod==='coin'&&coins>=c.price){coins-=c.price;c.unlocked=true;saveData();updateCoinDisplays();buildCharGrid();}}else{selectedCharId=c.id;saveData();buildCharGrid();}};
     grid.appendChild(card);
     setTimeout(()=>{const cvs=card.querySelector('canvas');if(cvs){const c2=cvs.getContext('2d');drawCharacter(0,0,50,50,c.color,1,false,true,0);}},10);
   });
   updateCoinDisplays();
 };
 
-// REDESIGNED level grid to match circular button style (image 6)
 const buildLevelGrid=()=>{
   const grid=document.getElementById('level-grid');grid.innerHTML='';
   const themeEmojiMap={ice:'❄️',lava:'🌋',sky:'☁️',mountain:'⛰️',cave:'⚫',thorns:'💀',final:'👑'};
@@ -751,22 +667,11 @@ const buildLevelGrid=()=>{
     const emoji=themeEmojiMap[theme]||'🎮';
     const worldName=(t('world_'+theme)||theme).replace(/^[\S]+\s/,'');
     const stars=levelStars[i];
-
     const div=document.createElement('div');div.className='level-item';
-
-    const btn=document.createElement('div');
-    btn.className=unlocked?'level-btn-unlocked':'level-btn-locked';
-
-    if(unlocked){
-      btn.innerHTML=`<span style="font-size:18px;line-height:1;font-weight:900;">${i+1}</span>`+(stars>0?`<span style="font-size:9px;">${'⭐'.repeat(Math.min(stars,3))}</span>`:'');
-      btn.onclick=()=>{currentLevel=i+1;startLevel();};
-    }else{
-      btn.innerHTML=`<span style="font-size:11px;color:#444;">${i+1}</span><span style="font-size:18px;">🔒</span>`;
-    }
-
-    const tag=document.createElement('div');tag.className='level-world-tag';
-    tag.innerHTML=`${emoji}<br>${worldName}`;
-
+    const btn=document.createElement('div');btn.className=unlocked?'level-btn-unlocked':'level-btn-locked';
+    if(unlocked){btn.innerHTML=`<span style="font-size:18px;line-height:1;font-weight:900;">${i+1}</span>`+(stars>0?`<span style="font-size:9px;">${'⭐'.repeat(Math.min(stars,3))}</span>`:'');btn.onclick=()=>{currentLevel=i+1;startLevel();};}
+    else{btn.innerHTML=`<span style="font-size:11px;color:#444;">${i+1}</span><span style="font-size:18px;">🔒</span>`;}
+    const tag=document.createElement('div');tag.className='level-world-tag';tag.innerHTML=`${emoji}<br>${worldName}`;
     div.appendChild(btn);div.appendChild(tag);grid.appendChild(div);
   }
 };
@@ -774,9 +679,8 @@ const buildLevelGrid=()=>{
 const startLevel=()=>{currentState=STATE.PLAYING;hideAllPanels();generateLevel(currentLevel);player=new Player();if(IS_MOBILE)mobileControls.style.display='flex';document.getElementById('ctrl-attack').style.display='none';updateCoinDisplays();updatePauseBtn();};
 const backToLobby=()=>{mobileLeft=false;mobileRight=false;mobileJump=false;keys={};currentState=STATE.LOBBY;hideAllPanels();showPanel(panels.lobby);mobileControls.style.display='none';hideBossHpBar();hideWeaponHud();hideBossMsg();applyBackground();applyTheme();updateCoinDisplays();updatePauseBtn();};
 
-// Event listeners (all original preserved + new X button for level panel)
 document.getElementById('btn-close-quiz').onclick=backToLobby;
-document.getElementById('btn-close-level').onclick=backToLobby;  // NEW: X on level panel
+document.getElementById('btn-close-level').onclick=backToLobby;
 pauseTrigger.addEventListener('click',()=>{if(currentState===STATE.PLAYING){keys={};currentState=STATE.PAUSE;showPanel(panels.pause);updatePauseBtn();}});
 window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='Escape'&&currentState===STATE.PLAYING){keys={};currentState=STATE.PAUSE;showPanel(panels.pause);updatePauseBtn();}if((e.key==='e'||e.key==='E')&&currentState===STATE.PLAYING&&player)player.dash();});
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
@@ -816,7 +720,13 @@ document.getElementById('btn-lobby-mission').onclick=backToLobby;
 
 const populateBgSelect=()=>{const sel=document.getElementById('bg-select');sel.innerHTML='';for(let i=0;i<bgNames.length;i++){const opt=document.createElement('option');opt.value=i+1;opt.textContent=`${i+1}. ${bgNames[i][currentLang]}`;sel.appendChild(opt);}sel.value=bgIndex;};
 
-const init=()=>{randomizeLevelThemes();loadData();startGameLoop();let prog=0;const intv=setInterval(()=>{prog+=10;document.getElementById('load-fill').style.width=prog+'%';if(prog>=100){clearInterval(intv);panels.loading.classList.remove('active');showPanel(panels.lobby);currentState=STATE.LOBBY;applyBackground();applyTheme();updateCoinDisplays();}},60);if(IS_MOBILE)mobileControls.style.display='flex';};
+const init=()=>{
+  randomizeLevelThemes();loadData();startGameLoop();
+  // FIX 1: Apply responsive scaling on start
+  scaleGame();
+  let prog=0;const intv=setInterval(()=>{prog+=10;document.getElementById('load-fill').style.width=prog+'%';if(prog>=100){clearInterval(intv);panels.loading.classList.remove('active');showPanel(panels.lobby);currentState=STATE.LOBBY;applyBackground();applyTheme();updateCoinDisplays();}},60);
+  if(IS_MOBILE)mobileControls.style.display='flex';
+};
 init();
 })();
 </script>
