@@ -6,9 +6,7 @@
 <title>Gujitingun Bross Quiz</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-/* FIX: body allows scaling, not flex-centered (game-container positioned by JS) */
 body{background:#0a0f1a;overflow:hidden;touch-action:manipulation;user-select:none;width:100vw;height:100vh;}
-/* FIX: game-container uses fixed positioning for proper scaling on all screens */
 #game-container{position:fixed;width:900px;height:600px;background:#000;overflow:hidden;border-radius:25px;box-shadow:0 0 50px rgba(0,180,255,0.6);transform-origin:top left;}
 canvas{display:block;width:100%;height:100%;background:transparent}
 #ui-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
@@ -154,9 +152,7 @@ const GROUND_Y = 540;
 const TOTAL_LEVELS = 25;
 const IS_MOBILE = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-// =============================================
-// FIX 1: RESPONSIVE SCALING - fit all screen sizes including landscape mobile
-// =============================================
+// Responsive scaling
 const scaleGame = () => {
   const gc = document.getElementById('game-container');
   const scale = Math.min(window.innerWidth / 900, window.innerHeight / 600);
@@ -238,6 +234,13 @@ let levelUnlocked=Array(TOTAL_LEVELS).fill(false),levelStars=Array(TOTAL_LEVELS)
 let coins=0,totalScore=0,playerName='Player1',volume=70,themeUI='dark',bgIndex=1;
 let levelThemes=[];
 
+// =============================================
+// NEW: Door cooldown - prevents quiz re-triggering after X is pressed
+// quizJustClosed = true after pressing X, reset when player walks away from door
+// =============================================
+let quizJustClosed = false;
+let doorCooldownTimer = 0;
+
 const bgNames=[
 {id:'🌅 Pantai Senja',en:'🌅 Sunset Beach'},{id:'🌲 Hutan Pinus',en:'🌲 Pine Forest'},{id:'✨ Kota Neon',en:'✨ Neon City'},{id:'🌊 Samudra Biru',en:'🌊 Blue Ocean'},{id:'🏜️ Gurun Emas',en:'🏜️ Golden Desert'},
 {id:'🌋 Gunung Berapi',en:'🌋 Volcano'},{id:'🏔️ Pegunungan Salju',en:'🏔️ Snowy Mountains'},{id:'🌌 Galaksi',en:'🌌 Galaxy'},{id:'🎆 Festival',en:'🎆 Festival'},{id:'🌃 Malam Kota',en:'🌃 City Night'},
@@ -316,27 +319,20 @@ const respawnPlayer=()=>{if(!player)return;player.x=100;player.y=400;player.vy=0
 
 const seededR=(seed)=>{let s=(seed*1664525+1013904223)|0;return()=>{s=(s*1664525+1013904223)|0;return((s>>>0)/4294967296);};};
 
-// Helper: check if a range [ax, ax+aw] overlaps pipe exclusion zone with margin
 const overlapsAnyPipe=(ax,aw,margin)=>pipes.some(p=>ax+aw>p.x-margin&&ax<p.x+p.w+margin);
 
-// =============================================
-// FIXED generateLevel: generate pipes FIRST, then avoid overlaps for all other elements
-// =============================================
 const generateLevel=(lv)=>{
   platforms=[];movingPlatforms=[];enemies=[];hazards=[];powerups=[];playerProjectiles=[];questionBlocks=[];pipes=[];stairs=[];
   bossObj=null;weaponPickup=null;playerHasWeapon=false;bossDefeated=false;levelScore=0;lives=3;gameTime=0;
+  // RESET door cooldown state when starting a new level
+  quizJustClosed=false; doorCooldownTimer=0;
   hideBossHpBar();hideWeaponHud();hideBossMsg();
   const rnd=seededR(lv*31337+7919);const theme=getWorldTheme(lv);const diff=Math.min(Math.floor((lv-1)/5),4);
 
-  // STEP 1: Generate pipes FIRST so other elements can avoid them
-  // FIX: pipes get bigger spacing + clear gap between them
   for(let i=0;i<4;i++){const px=480+i*700;pipes.push({x:px,y:GROUND_Y-70,w:60,h:90});}
 
-  // STEP 2: Ground segments
-  // FIX: small gaps even at level 1 to create holes + avoid pipe gaps
   let gx=0;const groundSegs=[];groundSegs.push({x:0,w:380});gx=380;
   while(gx<WORLD_WIDTH-400){
-    // FIX: even diff=0 gets occasional holes (30% chance of 35-50px gap)
     const gapW=diff===0?(rnd()<0.3?35+rnd()*15:0):Math.min(55+diff*35+rnd()*65,260);
     gx+=gapW;
     if(gx>=WORLD_WIDTH-400)break;
@@ -346,14 +342,12 @@ const generateLevel=(lv)=>{
   groundSegs.push({x:WORLD_WIDTH-380,w:380});
   for(const seg of groundSegs)platforms.push({x:seg.x,y:GROUND_Y,w:seg.w,h:20,isGround:true});
 
-  // STEP 3: Elevated platforms - AVOID pipe zones
   const heights=[470,440,400,360,320,280,250,210];
   let lastX=200;
   const numPlats=14+lv;
   for(let i=0;i<numPlats;i++){
     const gap=80+rnd()*180;let px=lastX+gap;
     if(px>=WORLD_WIDTH-500)break;
-    // FIX: Skip if this platform overlaps pipe exclusion zone (100px margin each side)
     if(overlapsAnyPipe(px,100+rnd()*120,100)){lastX=px+100+rnd()*80;i--;if(i<-5)break;continue;}
     const py=heights[Math.floor(rnd()*Math.min(4+diff,heights.length))];
     const pw=80+rnd()*120;
@@ -362,63 +356,28 @@ const generateLevel=(lv)=>{
     lastX=px+pw;
   }
 
-  // STEP 4: Stairs - AVOID pipe zones
   for(let i=0;i<3;i++){
     let sx=600+i*950;
-    // FIX: Shift stairs away from pipes if overlapping
     for(const p of pipes){if(sx+160>p.x-60&&sx<p.x+p.w+60){sx=p.x+p.w+80;}}
     if(sx>=WORLD_WIDTH-400)continue;
-    stairs.push({x:sx,y:GROUND_Y-50,w:150,h:18});
-    stairs.push({x:sx+40,y:GROUND_Y-110,w:110,h:18});
-    stairs.push({x:sx+80,y:GROUND_Y-170,w:70,h:18});
+    stairs.push({x:sx,y:GROUND_Y-50,w:150,h:18});stairs.push({x:sx+40,y:GROUND_Y-110,w:110,h:18});stairs.push({x:sx+80,y:GROUND_Y-170,w:70,h:18});
   }
 
-  // STEP 5: Ground hazards (spikes) - avoid pipes too
   const numH=3+diff*2;
-  for(let i=0;i<numH;i++){
-    const hx=500+Math.floor(i*(WORLD_WIDTH-1100)/numH)+rnd()*120;
-    // Don't place spikes under pipes
-    if(!overlapsAnyPipe(hx,36,50)){hazards.push({x:hx,y:GROUND_Y-16,w:36,h:16,type:'spike'});}
-  }
-  if(theme==='lava'){
-    for(let i=0;i<groundSegs.length-1;i++){
-      const cur=groundSegs[i],nxt=groundSegs[i+1];const gapStart=cur.x+cur.w,gapEnd=nxt.x;
-      if(gapEnd>gapStart+20)hazards.push({x:gapStart+10,y:GROUND_Y-10,w:gapEnd-gapStart-20,h:40,type:'lava'});
-    }
-  }
+  for(let i=0;i<numH;i++){const hx=500+Math.floor(i*(WORLD_WIDTH-1100)/numH)+rnd()*120;if(!overlapsAnyPipe(hx,36,50)){hazards.push({x:hx,y:GROUND_Y-16,w:36,h:16,type:'spike'});}}
+  if(theme==='lava'){for(let i=0;i<groundSegs.length-1;i++){const cur=groundSegs[i],nxt=groundSegs[i+1];const gapStart=cur.x+cur.w,gapEnd=nxt.x;if(gapEnd>gapStart+20)hazards.push({x:gapStart+10,y:GROUND_Y-10,w:gapEnd-gapStart-20,h:40,type:'lava'});}}
 
-  // STEP 6: Question blocks - AVOID pipe zones (150px margin)
-  for(let i=0;i<8;i++){
-    const qx=350+i*360+rnd()*90;
-    const qy=260+rnd()*200;
-    // FIX: Skip question block if too close to any pipe
-    if(!overlapsAnyPipe(qx,40,150)){questionBlocks.push({x:qx,y:qy,w:40,h:40,hit:false});}
-  }
+  for(let i=0;i<8;i++){const qx=350+i*360+rnd()*90;const qy=260+rnd()*200;if(!overlapsAnyPipe(qx,40,150)){questionBlocks.push({x:qx,y:qy,w:40,h:40,hit:false});}}
 
-  // STEP 7: Enemies - on ground only, patrol won't cross pipes
   for(let i=0;i<5+Math.floor(lv*1.5);i++){
     const ex=450+Math.floor(i*(WORLD_WIDTH-800)/(5+Math.floor(lv*1.5)))+rnd()*80;
-    // Find patrol bounds that don't cross any pipe
     let pLeft=ex-80,pRight=ex+100;
-    for(const p of pipes){
-      if(ex<p.x&&pRight>p.x-20)pRight=p.x-25;
-      if(ex>p.x+p.w&&pLeft<p.x+p.w+20)pLeft=p.x+p.w+25;
-    }
+    for(const p of pipes){if(ex<p.x&&pRight>p.x-20)pRight=p.x-25;if(ex>p.x+p.w&&pLeft<p.x+p.w+20)pLeft=p.x+p.w+25;}
     if(pRight>pLeft+20){enemies.push({x:ex,y:GROUND_Y-35,w:34,h:34,type:'walker',dir:1,alive:true,hp:1+(lv>12?1:0),emoji:THEME_CFG[theme].enemyEmoji,patrolLeft:pLeft,patrolRight:pRight});}
   }
-  // Pipe guards - patrol only on the left side of pipe (away from pipe body)
-  for(const p of pipes){
-    if(p.x-130>100){
-      enemies.push({x:p.x-90,y:GROUND_Y-35,w:34,h:34,type:'walker',dir:-1,alive:true,hp:1,emoji:'👾',patrolLeft:p.x-150,patrolRight:p.x-30});
-    }
-  }
+  for(const p of pipes){if(p.x-130>100){enemies.push({x:p.x-90,y:GROUND_Y-35,w:34,h:34,type:'walker',dir:-1,alive:true,hp:1,emoji:'👾',patrolLeft:p.x-150,patrolRight:p.x-30});}}
 
-  powerups=[
-    {x:350,y:GROUND_Y-40,w:24,h:24,type:'coin',active:true},
-    {x:1200,y:400,w:24,h:24,type:'heart',active:true},
-    {x:2000,y:360,w:24,h:24,type:'coin',active:true},
-    {x:2700,y:GROUND_Y-40,w:24,h:24,type:'heart',active:true}
-  ];
+  powerups=[{x:350,y:GROUND_Y-40,w:24,h:24,type:'coin',active:true},{x:1200,y:400,w:24,h:24,type:'heart',active:true},{x:2000,y:360,w:24,h:24,type:'coin',active:true},{x:2700,y:GROUND_Y-40,w:24,h:24,type:'heart',active:true}];
   weaponPickup={x:WORLD_WIDTH-520,y:GROUND_Y-55,w:44,h:44,active:true,emoji:THEME_CFG[theme].weapEmoji,name:THEME_CFG[theme].weapName};
   const bossHp=6+diff*4+(lv===25?10:0);
   bossObj={x:WORLD_WIDTH-310,y:GROUND_Y-90,w:64,h:90,hp:bossHp,maxHp:bossHp,alive:true,active:false,dir:-1,speed:1.2+diff*0.5,shootTimer:0,shootInterval:Math.max(35,85-diff*10),projectiles:[],phase:1,emoji:THEME_CFG[theme].bossEmoji,hitFlash:0};
@@ -447,98 +406,64 @@ const hideWeaponHud=()=>{document.getElementById('weapon-hud').style.display='no
 const showBossMsg=(msg)=>{document.getElementById('boss-msg').innerHTML=msg;document.getElementById('boss-msg').style.display='block';};
 const hideBossMsg=()=>{document.getElementById('boss-msg').style.display='none';};
 
-// =============================================
-// FIXED updateGame
-// =============================================
 const updateGame=()=>{
   if(!player)return;gameTime++;const theme=getWorldTheme(currentLevel);player.update(theme);
 
-  // allP: correct pipe cap y + question blocks solid
-  const allP=[
-    ...platforms,
-    ...stairs,
-    ...pipes.map(p=>({x:p.x-5,y:p.y-20,w:p.w+10,h:20})),
-    ...questionBlocks.map(qb=>({x:qb.x,y:qb.y,w:qb.w,h:qb.h}))
-  ];
+  const allP=[...platforms,...stairs,...pipes.map(p=>({x:p.x-5,y:p.y-20,w:p.w+10,h:20})),...questionBlocks.map(qb=>({x:qb.x,y:qb.y,w:qb.w,h:qb.h}))];
 
   player.onGround=false;
 
-  // Landing collision
   for(const p of allP){
     if(player.x+player.w>p.x+3&&player.x<p.x+p.w-3&&player.y+player.h>p.y&&player.y+player.h<p.y+p.h+18&&player.vy>=0&&player.y+player.h-player.vy<=p.y+10){
       player.y=p.y-player.h;player.vy=0;player.onGround=true;
     }
   }
 
-  // Stair collision
   for(const s of stairs){
     if(player.x+player.w>s.x+4&&player.x<s.x+s.w-4&&player.y+player.h>s.y-8&&player.y+player.h<s.y+18&&player.vy>=0&&(keys['ArrowRight']||keys['d']||keys['ArrowLeft']||keys['a']||mobileLeft||mobileRight)){
       player.y=s.y-player.h;player.vy=0;player.onGround=true;
     }
   }
 
-  // Question block ceiling + side collision
   for(const qb of questionBlocks){
-    const px=player.x,pw_=player.x+player.w,py=player.y,ph=player.y+player.h;
+    const px_=player.x,pw_=player.x+player.w,py_=player.y,ph_=player.y+player.h;
     const qx=qb.x,qw=qb.x+qb.w,qy=qb.y,qh=qb.y+qb.h;
-    if(pw_-4>qx&&px+4<qw){
-      if(py<=qh+1&&py>=qy-2&&player.vy<0){player.y=qh;player.vy=1;if(!qb.hit){qb.hit=true;const reward=Math.random()<0.7?{type:'coin'}:{type:'heart'};powerups.push({x:qb.x+5,y:qb.y-30,w:24,h:24,type:reward.type,active:true,vy:-5});}}
-      if(ph>qy+5&&py<qh-5){if(pw_>qx+2&&pw_<=qw&&player.vx>0){player.x=qx-player.w;player.vx=0;}else if(px<qw-2&&px>=qx&&player.vx<0){player.x=qw;player.vx=0;}}
+    if(pw_-4>qx&&px_+4<qw){
+      if(py_<=qh+1&&py_>=qy-2&&player.vy<0){player.y=qh;player.vy=1;if(!qb.hit){qb.hit=true;const reward=Math.random()<0.7?{type:'coin'}:{type:'heart'};powerups.push({x:qb.x+5,y:qb.y-30,w:24,h:24,type:reward.type,active:true,vy:-5});}}
+      if(ph_>qy+5&&py_<qh-5){if(pw_>qx+2&&pw_<=qw&&player.vx>0){player.x=qx-player.w;player.vx=0;}else if(px_<qw-2&&px_>=qx&&player.vx<0){player.x=qw;player.vx=0;}}
     }
   }
 
-  // FIX 3: PIPE SIDE COLLISION - robust overlap-based resolution
   for(const p of pipes){
-    const pL=p.x-5, pR=p.x+p.w+5;
-    const pCapY=p.y-20, pBotY=p.y+p.h;
-    // Check full vertical overlap (from cap top to pipe bottom)
+    const pL=p.x-5,pR=p.x+p.w+5,pCapY=p.y-20,pBotY=p.y+p.h;
     const vertOk=player.y+player.h>pCapY+4&&player.y<pBotY;
     const horizOk=player.x+player.w>pL&&player.x<pR;
     if(vertOk&&horizOk){
-      // Don't resolve if player just landed on cap (handled by allP)
       const onCap=player.onGround&&player.y+player.h<=pCapY+3;
       if(!onCap){
-        // Use minimum overlap to determine push direction
-        const overlapL=(player.x+player.w)-pL;
-        const overlapR=pR-player.x;
+        const overlapL=(player.x+player.w)-pL,overlapR=pR-player.x;
         if(overlapL<=overlapR){player.x=pL-player.w;if(player.vx>0)player.vx=0;}
         else{player.x=pR;if(player.vx<0)player.vx=0;}
       }
     }
   }
 
-  // FIX 4: Enemy update with pipe avoidance + FIX: enemies affected by spikes/lava
   for(const e of enemies){
     if(!e.alive)continue;
     let onPlat=false;
     for(const p of allP){if(e.x+e.w>p.x+2&&e.x<p.x+p.w-2&&e.y+e.h>=p.y-2&&e.y+e.h<=p.y+18){onPlat=true;e.y=p.y-e.h;break;}}
     if(!onPlat){e.y+=3.5;if(e.y>700){e.alive=false;continue;}}
-    else{
-      if(e.patrolLeft!==undefined){
-        const nx=e.x+e.dir*1.5;
-        let blocked=false;
-        for(const pp of pipes){if(nx+e.w>pp.x-3&&nx<pp.x+pp.w+3&&e.y+e.h>pp.y-5){blocked=true;break;}}
-        if(blocked)e.dir*=-1;
-        e.x+=e.dir*1.5;
-        if(e.x<=e.patrolLeft||e.x>=e.patrolRight)e.dir*=-1;
-      }
-    }
-    // FIX 2: Enemy dies from spikes/lava (no more clipping through hazards)
-    for(const h of hazards){
-      if(e.x+e.w>h.x&&e.x<h.x+h.w&&e.y+e.h>h.y&&e.y<h.y+h.h){e.alive=false;break;}
-    }
+    else{if(e.patrolLeft!==undefined){const nx=e.x+e.dir*1.5;let blocked=false;for(const pp of pipes){if(nx+e.w>pp.x-3&&nx<pp.x+pp.w+3&&e.y+e.h>pp.y-5){blocked=true;break;}}if(blocked)e.dir*=-1;e.x+=e.dir*1.5;if(e.x<=e.patrolLeft||e.x>=e.patrolRight)e.dir*=-1;}}
+    for(const h of hazards){if(e.x+e.w>h.x&&e.x<h.x+h.w&&e.y+e.h>h.y&&e.y<h.y+h.h){e.alive=false;break;}}
   }
-  // Remove dead enemies
   for(let i=enemies.length-1;i>=0;i--){if(!enemies[i].alive)enemies.splice(i,1);}
 
-  // Projectile update
   for(let i=playerProjectiles.length-1;i>=0;i--){
     const p=playerProjectiles[i];if(!p.active){playerProjectiles.splice(i,1);continue;}p.x+=p.vx;p.y+=p.vy;
     if(p.x<0||p.x>WORLD_WIDTH||p.y>650||p.y<0){p.active=false;continue;}
     for(let e of enemies){if(!e.alive)continue;if(p.x>e.x&&p.x<e.x+e.w&&p.y>e.y&&p.y<e.y+e.h){e.hp-=p.damage;p.active=false;if(e.hp<=0){e.alive=false;stats.kills++;coins+=10;stats.totalCoins+=10;levelScore+=15;score+=15;}break;}}
   }
 
-  // Enemy-player collision
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];if(!e.alive){enemies.splice(i,1);continue;}
     if(player.x+player.w>e.x&&player.x<e.x+e.w&&player.y+player.h>e.y&&player.y<e.y+e.h){
@@ -548,24 +473,38 @@ const updateGame=()=>{
     }
   }
 
-  // Hazards (player)
   for(const h of hazards){
     if(h.type==='lava'&&player.x+player.w>h.x&&player.x<h.x+h.w&&player.y+player.h>h.y&&player.y<h.y+h.h){if(player.invTimer<=0&&!player.shieldActive){lives-=lives;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}else respawnPlayer();}}
     else if(player.x+player.w>h.x&&player.x<h.x+h.w&&player.y+player.h>h.y&&player.y<h.y+h.h){if(player.invTimer<=0&&!player.shieldActive){lives--;player.invTimer=60;if(lives<=0){currentState=STATE.GAMEOVER;showPanel(panels.gameover);document.getElementById('gameover-score').textContent='Score: '+levelScore;}else respawnPlayer();}}
   }
 
-  // Powerups
   for(const pw of powerups){if(!pw.active)continue;if(player.x+player.w>pw.x&&player.x<pw.x+pw.w&&player.y+player.h>pw.y&&player.y<pw.y+pw.h){pw.active=false;if(pw.type==='coin'){coins+=20;stats.totalCoins+=20;levelScore+=20;score+=20;updateCoinDisplays();}else if(pw.type==='heart')lives=Math.min(lives+1,5);}}
 
-  // Weapon pickup
   if(weaponPickup&&weaponPickup.active&&player.x+player.w>weaponPickup.x&&player.x<weaponPickup.x+weaponPickup.w&&player.y+player.h>weaponPickup.y&&player.y<weaponPickup.y+weaponPickup.h){
     weaponPickup.active=false;playerHasWeapon=true;showWeaponHud(weaponPickup.emoji);document.getElementById('ctrl-attack').style.display='flex';
     showBossMsg((currentLang==='id'?'⚔️ Dapat '+weaponPickup.name+'! Klik Kiri / Tombol ⚔️':'⚔️ Got '+weaponPickup.name+'! Left Click / ⚔️ Button'));setTimeout(hideBossMsg,2500);
     if(bossObj&&bossObj.alive){bossObj.active=true;showBossHpBar();}
   }
 
-  // Exit door
-  if(exitDoor.open&&player.x+player.w>exitDoor.x&&player.x<exitDoor.x+exitDoor.w&&player.y+player.h>exitDoor.y&&player.y<exitDoor.y+exitDoor.h){currentState=STATE.QUIZ;showPanel(panels.quiz);startChallenge();updatePauseBtn();}
+  // =============================================
+  // FIX: Door cooldown - reset quizJustClosed when player walks far enough away from door
+  // Player needs to walk at least 120px away from door before quiz can retrigger
+  // =============================================
+  if(doorCooldownTimer>0) doorCooldownTimer--;
+  if(quizJustClosed && exitDoor.x>0){
+    // Reset when player is clearly away from the door zone
+    const playerCenter = player.x + player.w/2;
+    const doorCenter  = exitDoor.x + exitDoor.w/2;
+    if(Math.abs(playerCenter - doorCenter) > 160){
+      quizJustClosed = false;
+      doorCooldownTimer = 0;
+    }
+  }
+
+  // Exit door - only triggers when NOT in cooldown
+  if(exitDoor.open && !quizJustClosed && player.x+player.w>exitDoor.x&&player.x<exitDoor.x+exitDoor.w&&player.y+player.h>exitDoor.y&&player.y<exitDoor.y+exitDoor.h){
+    currentState=STATE.QUIZ;showPanel(panels.quiz);startChallenge();updatePauseBtn();
+  }
 
   updateBoss();
 };
@@ -596,16 +535,8 @@ const renderGame=()=>{
   ctx.save();ctx.translate(-cameraX,0);
   if(theme==='lava'){ctx.fillStyle=`rgba(255,100,0,${0.2+0.1*Math.sin(gameTime*0.05)})`;ctx.fillRect(cameraX,GROUND_Y+20,canvas.width,100);}
   for(const p of platforms){ctx.fillStyle=tc.platColor;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=tc.platTop;ctx.fillRect(p.x,p.y,p.w,5);}
-  for(const qb of questionBlocks){
-    ctx.fillStyle=qb.hit?'#8a6f3d':'#f1c40f';ctx.fillRect(qb.x,qb.y,qb.w,qb.h);
-    ctx.strokeStyle=qb.hit?'#6a5a2d':'#cc9900';ctx.lineWidth=2;ctx.strokeRect(qb.x+1,qb.y+1,qb.w-2,qb.h-2);
-    if(!qb.hit){ctx.fillStyle='#fff';ctx.font='bold 26px Arial';ctx.fillText('?',qb.x+11,qb.y+31);}
-  }
-  for(const p of pipes){
-    ctx.fillStyle='#2ecc71';ctx.fillRect(p.x,p.y,p.w,p.h);
-    ctx.fillStyle='#27ae60';ctx.fillRect(p.x-5,p.y-20,p.w+10,22);
-    ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x+4,p.y,8,p.h);ctx.fillRect(p.x-3,p.y-20,5,22);
-  }
+  for(const qb of questionBlocks){ctx.fillStyle=qb.hit?'#8a6f3d':'#f1c40f';ctx.fillRect(qb.x,qb.y,qb.w,qb.h);ctx.strokeStyle=qb.hit?'#6a5a2d':'#cc9900';ctx.lineWidth=2;ctx.strokeRect(qb.x+1,qb.y+1,qb.w-2,qb.h-2);if(!qb.hit){ctx.fillStyle='#fff';ctx.font='bold 26px Arial';ctx.fillText('?',qb.x+11,qb.y+31);}}
+  for(const p of pipes){ctx.fillStyle='#2ecc71';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#27ae60';ctx.fillRect(p.x-5,p.y-20,p.w+10,22);ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x+4,p.y,8,p.h);ctx.fillRect(p.x-3,p.y-20,5,22);}
   ctx.fillStyle='#8d5524';for(const s of stairs)ctx.fillRect(s.x,s.y,s.w,s.h);
   for(const h of hazards){
     if(h.type==='spike'){const sc={ice:'#90d8f0',lava:'#ff4400',sky:'#8898a8',mountain:'#909080',cave:'#554433',thorns:'#40701a',final:'#cc8800'}[theme]||'#aaa';drawSpike(h.x,h.y,h.w,h.h,sc);}
@@ -617,7 +548,23 @@ const renderGame=()=>{
   ctx.font='28px serif';
   for(const e of enemies){if(!e.alive)continue;ctx.save();if(e.dir<0){ctx.translate(e.x+e.w,e.y);ctx.scale(-1,1);ctx.fillText(e.emoji,0,e.h);}else ctx.fillText(e.emoji,e.x,e.y+e.h);ctx.restore();}
   if(bossObj&&bossObj.alive){const b=bossObj;ctx.save();if(b.hitFlash%4<2)ctx.filter='brightness(3)';ctx.font='62px serif';if(b.dir<0){ctx.translate(b.x+b.w,b.y);ctx.scale(-1,1);ctx.fillText(b.emoji,0,b.h);}else ctx.fillText(b.emoji,b.x-5,b.y+b.h);ctx.filter='none';ctx.restore();ctx.font='16px serif';for(const proj of b.projectiles)ctx.fillText('🔴',proj.x-8,proj.y+8);}
+
+  // Draw door + cooldown hint
   drawDoor(exitDoor,theme);
+  // NEW: Show hint when player must walk away before re-entering
+  if(quizJustClosed&&exitDoor.open){
+    ctx.save();
+    ctx.font='bold 13px sans-serif';
+    ctx.fillStyle='rgba(255,230,50,0.95)';
+    ctx.textAlign='center';
+    ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=3;
+    const hint=currentLang==='id'?'← Menjauh dulu!':'← Move away first!';
+    ctx.strokeText(hint, exitDoor.x+exitDoor.w/2, exitDoor.y-14);
+    ctx.fillText(hint, exitDoor.x+exitDoor.w/2, exitDoor.y-14);
+    ctx.textAlign='left';
+    ctx.restore();
+  }
+
   drawCharacter(player.x,player.y,player.w,player.h,charData[selectedCharId].color,player.facing,player.isMoving,player.onGround,player.invTimer);
   ctx.font='20px serif';
   for(const proj of playerProjectiles){if(!proj.active)continue;ctx.fillText(proj.emoji,proj.x-10,proj.y+10);}
@@ -662,11 +609,7 @@ const buildLevelGrid=()=>{
   const grid=document.getElementById('level-grid');grid.innerHTML='';
   const themeEmojiMap={ice:'❄️',lava:'🌋',sky:'☁️',mountain:'⛰️',cave:'⚫',thorns:'💀',final:'👑'};
   for(let i=0;i<TOTAL_LEVELS;i++){
-    const unlocked=levelUnlocked[i];
-    const theme=getWorldTheme(i+1);
-    const emoji=themeEmojiMap[theme]||'🎮';
-    const worldName=(t('world_'+theme)||theme).replace(/^[\S]+\s/,'');
-    const stars=levelStars[i];
+    const unlocked=levelUnlocked[i],theme=getWorldTheme(i+1),emoji=themeEmojiMap[theme]||'🎮',worldName=(t('world_'+theme)||theme).replace(/^[\S]+\s/,''),stars=levelStars[i];
     const div=document.createElement('div');div.className='level-item';
     const btn=document.createElement('div');btn.className=unlocked?'level-btn-unlocked':'level-btn-locked';
     if(unlocked){btn.innerHTML=`<span style="font-size:18px;line-height:1;font-weight:900;">${i+1}</span>`+(stars>0?`<span style="font-size:9px;">${'⭐'.repeat(Math.min(stars,3))}</span>`:'');btn.onclick=()=>{currentLevel=i+1;startLevel();};}
@@ -679,7 +622,21 @@ const buildLevelGrid=()=>{
 const startLevel=()=>{currentState=STATE.PLAYING;hideAllPanels();generateLevel(currentLevel);player=new Player();if(IS_MOBILE)mobileControls.style.display='flex';document.getElementById('ctrl-attack').style.display='none';updateCoinDisplays();updatePauseBtn();};
 const backToLobby=()=>{mobileLeft=false;mobileRight=false;mobileJump=false;keys={};currentState=STATE.LOBBY;hideAllPanels();showPanel(panels.lobby);mobileControls.style.display='none';hideBossHpBar();hideWeaponHud();hideBossMsg();applyBackground();applyTheme();updateCoinDisplays();updatePauseBtn();};
 
-document.getElementById('btn-close-quiz').onclick=backToLobby;
+// =============================================
+// NEW: cancelQuiz - closes quiz and returns to game WITHOUT going to lobby
+// Player position is preserved, door gets cooldown so quiz can't re-trigger immediately
+// =============================================
+const cancelQuiz = () => {
+  currentState = STATE.PLAYING;
+  hideAllPanels();
+  updatePauseBtn();
+  // Set cooldown: player must walk away from door before re-triggering quiz
+  quizJustClosed = true;
+  doorCooldownTimer = 180; // safety timer (3s at 60fps)
+};
+
+// btn-close-quiz now uses cancelQuiz (returns to game, NOT lobby)
+document.getElementById('btn-close-quiz').onclick = cancelQuiz;
 document.getElementById('btn-close-level').onclick=backToLobby;
 pauseTrigger.addEventListener('click',()=>{if(currentState===STATE.PLAYING){keys={};currentState=STATE.PAUSE;showPanel(panels.pause);updatePauseBtn();}});
 window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='Escape'&&currentState===STATE.PLAYING){keys={};currentState=STATE.PAUSE;showPanel(panels.pause);updatePauseBtn();}if((e.key==='e'||e.key==='E')&&currentState===STATE.PLAYING&&player)player.dash();});
@@ -720,13 +677,7 @@ document.getElementById('btn-lobby-mission').onclick=backToLobby;
 
 const populateBgSelect=()=>{const sel=document.getElementById('bg-select');sel.innerHTML='';for(let i=0;i<bgNames.length;i++){const opt=document.createElement('option');opt.value=i+1;opt.textContent=`${i+1}. ${bgNames[i][currentLang]}`;sel.appendChild(opt);}sel.value=bgIndex;};
 
-const init=()=>{
-  randomizeLevelThemes();loadData();startGameLoop();
-  // FIX 1: Apply responsive scaling on start
-  scaleGame();
-  let prog=0;const intv=setInterval(()=>{prog+=10;document.getElementById('load-fill').style.width=prog+'%';if(prog>=100){clearInterval(intv);panels.loading.classList.remove('active');showPanel(panels.lobby);currentState=STATE.LOBBY;applyBackground();applyTheme();updateCoinDisplays();}},60);
-  if(IS_MOBILE)mobileControls.style.display='flex';
-};
+const init=()=>{randomizeLevelThemes();loadData();startGameLoop();scaleGame();let prog=0;const intv=setInterval(()=>{prog+=10;document.getElementById('load-fill').style.width=prog+'%';if(prog>=100){clearInterval(intv);panels.loading.classList.remove('active');showPanel(panels.lobby);currentState=STATE.LOBBY;applyBackground();applyTheme();updateCoinDisplays();}},60);if(IS_MOBILE)mobileControls.style.display='flex';};
 init();
 })();
 </script>
