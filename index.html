@@ -263,7 +263,7 @@ bo={x:bpx+60,y:BPY-90,w:64,h:90,hp:bhp,mh:bhp,al:true,ac2:false,dr:-1,sp:1.2+df*
 }
 function uBo(){
 if(!bo||!bo.al||!bo.ac2)return;var b=bo;if(b.hf>0)b.hf--;
-b.ph=b.hp/b.mh<0.4?2:1;var spd=b.sp*(b.ph===2?1.6:1);b.x+=b.dr*spd;
+b.ph=b.hp/b.mhp<0.4?2:1;var spd=b.sp*(b.ph===2?1.6:1);b.x+=b.dr*spd;
 if(b.x<b.pl||b.x>b.pr)b.dr*=-1;b.y=b.sy-b.h;b.sht++;
 var intv=b.ph===2?Math.max(20,b.shi-20):b.shi;
 if(b.sht>=intv&&pl){b.sht=0;var dx=pl.x-b.x,dy=pl.y-b.y,dist=Math.sqrt(dx*dx+dy*dy)||1,spd2=5+b.ph;
@@ -274,7 +274,7 @@ if(p.ac&&pl&&pl.iv<=0&&!pl.sa&&p.x<pl.x+pl.w&&p.x+10>pl.x&&p.y<pl.y+pl.h&&p.y+10
 var np=[];for(var j=0;j<b.pj.length;j++)if(b.pj[j].ac)np.push(b.pj[j]);b.pj=np;
 for(var k=pps.length-1;k>=0;k--){var pr=pps[k];if(!pr.ac)continue;if(pr.x>b.x&&pr.x<b.x+b.w&&pr.y>b.y&&pr.y<b.y+b.h){b.hp-=pr.dm;b.hf=8;pr.ac=false;ls+=20;sc+=20;}}
 if(b.hp<=0){b.al=false;ed.op=true;st.bk++;ls+=200;sc+=200;co+=50;st.tc+=50;uCD();hBH();pSnd('boss_die');sBM('Boss defeated!');setTimeout(hBM,2500);}
-try{document.getElementById('bhi').style.width=Math.max(0,(b.hp/b.mh*100))+'%';document.getElementById('bhl').textContent=b.em+' BOSS: '+Math.max(0,b.hp)+'/'+b.mh;}catch(e){}
+try{document.getElementById('bhi').style.width=Math.max(0,(b.hp/b.mhp*100))+'%';document.getElementById('bhl').textContent=b.em+' BOSS: '+Math.max(0,b.hp)+'/'+b.mh;}catch(e){}
 }
 function uG(){
 if(!pl)return;gt++;var th=gWT(cl);pl.up(th);uFP();
@@ -314,7 +314,7 @@ dBgD(th);cxC.save();cxC.translate(-camX,0);
 if(th==='lava'){cxC.fillStyle='rgba(255,100,0,'+(0.2+0.1*Math.sin(gt*0.05))+')';cxC.fillRect(camX,GY+20,cv.width,100);}
 for(var i=0;i<pfs.length;i++){var p=pfs[i];if(p.dc){cxC.fillStyle=tc.bc||tc.pc;cxC.fillRect(p.x,p.y,p.w,p.h);cxC.fillStyle=tc.bt||tc.pt;cxC.fillRect(p.x,p.y,p.w,4);}else{cxC.fillStyle=tc.pc;cxC.fillRect(p.x,p.y,p.w,p.h);cxC.fillStyle=tc.pt;cxC.fillRect(p.x,p.y,p.w,5);}}
 for(var i2=0;i2<qbs.length;i2++){var q=qbs[i2];cxC.fillStyle=q.hit?'#8a6f3d':'#f1c40f';cxC.fillRect(q.x,q.y,q.w,q.h);cxC.strokeStyle=q.hit?'#6a5a2d':'#cc9900';cxC.lineWidth=2;cxC.strokeRect(q.x+1,q.y+1,q.w-2,q.h-2);if(!q.hit){cxC.fillStyle='#fff';cxC.font='bold 26px Arial';cxC.fillText('?',q.x+11,q.y+31);}}
-for(var i3=0;i3<pps2.length;i3++){var p=pps2[i3];cxC.fillStyle='#2ecc71';cxC.fillRect(p.x,p.y,p.w,p.h);cxC.fillStyle='#27ae60';cxC.fillRect(p.x-5,p.y-20,p.w+10,22);cxC.fillStyle='rgba(255,255,255,0.15)';cxC.fillRect(p.x+4,p.y,8,p.h);if(p.he&&p.ha){cxC.font='28px serif';cxC.fillText(tc.ee,p.x+9,p.y-3);var bw=34,bx=p.x+9,by=p.y-50,hp=p.mhp>0?p.hhp/p.mh:1;cxC.fillStyle='rgba(0,0,0,0.7)';cxC.fillRect(bx,by,bw,7);cxC.fillStyle=hp>0.5?'#2ecc71':'#e74c3c';cxC.fillRect(bx,by,bw*hp,7);}}
+for(var i3=0;i3<pps2.length;i3++){var p=pps2[i3];cxC.fillStyle='#2ecc71';cxC.fillRect(p.x,p.y,p.w,p.h);cxC.fillStyle='#27ae60';cxC.fillRect(p.x-5,p.y-20,p.w+10,22);cxC.fillStyle='rgba(255,255,255,0.15)';cxC.fillRect(p.x+4,p.y,8,p.h);if(p.he&&p.ha){cxC.font='28px serif';cxC.fillText(tc.ee,p.x+9,p.y-3);var bw=34,bx=p.x+9,by=p.y-50,hp=p.mhp>0?p.hhp/p.mhp:1;cxC.fillStyle='rgba(0,0,0,0.7)';cxC.fillRect(bx,by,bw,7);cxC.fillStyle=hp>0.5?'#2ecc71':'#e74c3c';cxC.fillRect(bx,by,bw*hp,7);}}
 for(var i4=0;i4<hzs.length;i4++){var h=hzs[i4];if(h.t==='spike'){var sc2={ice:'#90d8f0',lava:'#ff4400',sky:'#8898a8',mountain:'#909080',cave:'#554433',thorns:'#40701a',final:'#cc8800'}[th]||'#aaa';dS(h.x,h.y,h.w,h.h,sc2);}else if(h.t==='lava'){cxC.fillStyle='rgba(255,120,0,0.95)';cxC.fillRect(h.x,h.y,h.w,h.h);cxC.fillStyle='rgba(255,200,0,0.6)';cxC.fillRect(h.x,h.y,h.w,5);}}
 cxC.font='22px serif';
 for(var fi=0;fi<fpw.length;fi++){var f=fpw[fi];if(f.ac){cxC.globalAlpha=0.7+0.3*Math.sin(gt*0.2);cxC.fillText(f.t==='coin'?'🪙':'❤️',f.x,f.y+20);cxC.globalAlpha=1;}}
@@ -359,6 +359,7 @@ aMB('ml',function(){ml=true;},function(){ml=false;});
 aMB('mr',function(){mr=true;},function(){mr=false;});
 aMB('mj',function(){if(pl&&cs===ST.PL)pl.us();},function(){});
 aMB('ma',function(){if(pl&&cs===ST.PL&&phw)pl.at();},function(){});
+aMB('mk',function(){if(pl&&cs===ST.PL)pl.us();},function(){}); // FIX: Mobile Skill Button
 document.getElementById('bp').onclick=function(){pSnd('click');cs=ST.LV;sP(pn2.lv);bLG();uMC();uPB();};
 document.getElementById('bc').onclick=function(){pSnd('click');cs=ST.CH;sP(pn2.ch);bCG();uMC();};
 document.getElementById('blb').onclick=function(){pSnd('click');sP(pn2.el);var l=gLB();document.getElementById('el').innerHTML=l.length?l.map(function(e,i){return'<li>'+(i+1)+'. '+e.n+' - '+e.s+'</li>';}).join(''):'<li>No data</li>';uMC();};
